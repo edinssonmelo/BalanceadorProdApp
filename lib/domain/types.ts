@@ -30,6 +30,8 @@ export interface OperacionEstandar {
   requiereOperario: boolean;
   requiereTanque: boolean;
   duracionMin: number;
+  /** Personas simultáneas requeridas (montaje = 2). Default 1. */
+  operariosRequeridos?: number;
 }
 
 export interface MotivoRetraso {
@@ -66,7 +68,10 @@ export interface TareaProgramada {
   operacionId: string;
   operacionNombre: string;
   tipo: TipoTiempo;
+  /** Primer operario (compatibilidad). */
   operarioId: string | null;
+  /** Todos los operarios asignados (montaje = 2). */
+  operarioIds?: string[];
   loteIndex: number;
   productoNombre: string;
   productoInstruccion?: string;
@@ -113,6 +118,14 @@ export interface ResultadoProgramacion {
 
 export type EstadoJornada = 'borrador' | 'aprobada' | 'cerrada';
 
+export type EstadoCorteControl = 'pendiente' | 'ok' | 'atrasado';
+
+export interface CorteControl {
+  horaOffsetMin: number;
+  estado: EstadoCorteControl;
+  observacion?: string;
+}
+
 export interface Jornada {
   id: string;
   fecha: string;
@@ -131,6 +144,10 @@ export interface Jornada {
   operariosSnapshot: Operario[];
   resultado: ResultadoProgramacion | null;
   observacionFinal?: string;
+  /** Cortes horarios marcados por el supervisor (OK / Atrasado). */
+  cortesControl?: CorteControl[];
+  /** Tanques realmente fabricados al cierre (ingreso manual). */
+  tanquesReales?: number;
   creadaEn: string;
   /** Reloj de simulación demo (minutos desde inicio de jornada) */
   simClockMin?: number;

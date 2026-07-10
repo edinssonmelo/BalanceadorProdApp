@@ -5,9 +5,9 @@ import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import {
-  BarChart3,
   CalendarDays,
-  Gauge,
+  ClipboardList,
+  FileText,
   History,
   Home,
   Settings,
@@ -17,14 +17,6 @@ import { useStore } from '@/lib/store/useStore';
 import { formatFechaLarga, todayISO } from '@/lib/domain/time';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-
-const NAV = [
-  { href: '/', label: 'Inicio', Icon: Home, match: (p: string) => p === '/' },
-  { href: '/plan', label: 'Plan', Icon: CalendarDays, match: (p: string) => p.startsWith('/plan') },
-  { href: '/tablero', label: 'Tablero', Icon: BarChart3, match: (p: string) => p.includes('tablero') },
-  { href: '/indicadores', label: 'KPIs', Icon: Gauge, match: (p: string) => p.includes('indicadores') },
-  { href: '/historico', label: 'Histórico', Icon: History, match: (p: string) => p === '/historico' },
-];
 
 function estadoBadge(estado?: string) {
   if (!estado) return { label: 'Sin plan', variant: 'muted' as const };
@@ -57,6 +49,17 @@ export function AppShell({ children }: { children: ReactNode }) {
   const estado = estadoBadge(activa?.estado);
   const configActive =
     pathname.startsWith('/configuracion') || pathname.startsWith('/operarios') || pathname.startsWith('/tanques');
+
+  const hojaHref = activa ? `/plan/${activa.id}/hoja` : '/plan';
+  const controlHref = activa ? `/plan/${activa.id}/control` : '/plan';
+
+  const NAV = [
+    { href: '/', label: 'Inicio', Icon: Home, match: (p: string) => p === '/' },
+    { href: '/plan', label: 'Plan', Icon: CalendarDays, match: (p: string) => p.startsWith('/plan') },
+    { href: hojaHref, label: 'Hoja', Icon: FileText, match: (p: string) => p.includes('/hoja') },
+    { href: controlHref, label: 'Control', Icon: ClipboardList, match: (p: string) => p.includes('/control') },
+    { href: '/historico', label: 'Histórico', Icon: History, match: (p: string) => p === '/historico' },
+  ];
 
   return (
     <div className="min-h-full flex flex-col bg-background">
@@ -93,7 +96,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             const active = match(pathname);
             return (
               <Link
-                key={href}
+                key={href + label}
                 href={href}
                 className={cn(
                   'flex-1 flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors',

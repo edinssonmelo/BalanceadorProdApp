@@ -1,20 +1,28 @@
 # Contexto activo
 
 ## Última sesión (2026-07-10)
-Análisis exhaustivo del motor vs Excel/demo JSON. Fixes de paralelismo y comparación 2 vs 3 ops.
+MVP **planificar → imprimir → controlar** según validación del cliente.
 
-## Hallazgos
-- Desfase T1/T2 de 1 min: Camilo con eficiencia 85% → pesaje 6 min (no bug de paralelismo).
-- "2 y 3 ops mismo fin": bug en `compararOperarios` (solo miraba ops del plan).
-- Con eficiencia 100%: 1 op → 11:45, 2 → 10:30, 3 → 09:45. Arranque simétrico 07:35.
+## Flujo principal (MVP)
+1. Crear y revisar plan del día (comparación 2 vs 3 ops).
+2. **Generar hoja de producción** (`/plan/[id]/hoja`) — imprimir.
+3. **Control por hora** (`/plan/[id]/control`) — OK / Atrasado + cierre con tanques reales.
+4. Registro/vista operario/tablero/KPIs: rutas avanzadas, fuera del menú principal.
 
-## Hecho
-- Defaults eficiencia 100% (tiempos estándar).
-- `elegirOperario`: inicio → fin → carga (makespan).
-- Prioridad lotes en curso; `compararOperarios` usa snapshot completo.
-- 12 tests (paralelismo, espera+trabajo, 2 vs 3, Excel).
-- Push `b323e29` a main (deploy automático).
+## Motor — montaje en equipo
+- `operariosRequeridos: 2` en montaje (`defaults.ts`).
+- Capacidad montajes simultáneos = `floor(n_operarios / 2)`.
+- `elegirParOperarios`; tareas con `operarioIds[]`.
+- Helpers: `lib/domain/tarea-helpers.ts`.
+- 13 tests en `engine.test.ts`.
+
+## Hecho en esta iteración
+- `lib/domain/hoja.ts` + `HojaProduccionView` + print CSS.
+- `ControlDiaView` + `cortesControl` / `tanquesReales` en store.
+- Nav: AppShell/PlanTabs → Hoja + Control; CTAs reorientados.
+- Docs: GUIA-OPERACION, AGENTS, memory-bank.
 
 ## Próximos pasos sugeridos
-- En demo: Configuración → Datos demo → Reiniciar (limpia eficiencias viejas 85/70).
-- Validar con cliente en planta.
+- Logo real del cliente en hoja (`public/logo.svg`).
+- Validar hoja impresa en planta con supervisor.
+- Reiniciar datos demo tras deploy (montaje 2 personas).

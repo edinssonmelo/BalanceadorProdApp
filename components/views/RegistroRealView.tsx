@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { PlanTabs } from '@/components/PlanTabs';
 import { EmptyState, EstadoBadge, PasoFlujo } from '@/components/ui';
 import { offsetToClock, hhmmToMinutes, durationLabel } from '@/lib/domain/time';
+import { tareaOperarios } from '@/lib/domain/tarea-helpers';
 import type { TareaProgramada } from '@/lib/domain/types';
 
 export function RegistroRealView() {
@@ -51,7 +52,10 @@ export function RegistroRealView() {
 
       <div className="space-y-2">
         {tareas.map((t) => {
-          const op = jornada.operariosSnapshot.find((o) => o.id === t.operarioId);
+          const ops = tareaOperarios(t)
+            .map((oid) => jornada.operariosSnapshot.find((o) => o.id === oid)?.nombre)
+            .filter(Boolean);
+          const opLabel = ops.length ? ops.join(' + ') : '—';
           const realTxt =
             t.realInicioMin != null
               ? `${offsetToClock(base, t.realInicioMin)}${t.realFinMin != null ? '–' + offsetToClock(base, t.realFinMin) : '…'}`
@@ -62,7 +66,7 @@ export function RegistroRealView() {
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-sm">{t.operacionNombre}</p>
                 <p className="text-xs text-muted-foreground">
-                  {t.tanqueId} · {op?.nombre} · Real: {realTxt}
+                  {t.tanqueId} · {opLabel} · Real: {realTxt}
                 </p>
               </div>
               <EstadoBadge estado={t.estado} />

@@ -2,20 +2,17 @@
 
 import Link from 'next/link';
 import { useStore } from '@/lib/store/useStore';
-import { Card, StatCard, EstadoBadge, EmptyState } from '@/components/ui';
+import { Card, StatCard, EmptyState } from '@/components/ui';
 import { formatFechaLarga, todayISO } from '@/lib/domain/time';
-import { calcularIndicadores, estadoJornadaSemaforo } from '@/lib/domain/engine';
+import { calcularIndicadores } from '@/lib/domain/engine';
 
 export function InicioView() {
   const jornadas = useStore((s) => s.jornadas);
   const jornadaActivaId = useStore((s) => s.jornadaActivaId);
-  const parametros = useStore((s) => s.parametros);
 
   const activa = jornadas.find((j) => j.id === jornadaActivaId) ?? jornadas[0];
   const ind = activa ? calcularIndicadores(activa) : null;
-  const semaforo = ind
-    ? estadoJornadaSemaforo(ind.eficienciaOperativaPct || ind.eficienciaPlantaPct || 100, parametros)
-    : null;
+  const retrasos = (activa?.cortesControl ?? []).filter((c) => c.estado === 'atrasado').length;
 
   return (
     <div className="space-y-4">
@@ -26,35 +23,33 @@ export function InicioView() {
 
       {activa ? (
         <Card className="!p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <p className="eyebrow">Plan del día · {activa.estado === 'borrador' ? 'en revisión' : activa.estado}</p>
-              <p className="font-semibold capitalize mt-1">
-                {formatFechaLarga(activa.fecha)} · {activa.turno}
-              </p>
-            </div>
-            {semaforo && <EstadoBadge estado={semaforo.nivel} />}
+          <div className="mb-4">
+            <p className="eyebrow">Plan del día · {activa.estado === 'borrador' ? 'en revisión' : activa.estado}</p>
+            <p className="font-semibold capitalize mt-1">
+              {formatFechaLarga(activa.fecha)} · {activa.turno}
+            </p>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <StatCard label="Galones planeados" value={ind?.galonesPlaneados ?? 0} />
-            <StatCard label="Galones reales" value={ind?.galonesFabricados ?? 0} tone="success" />
+            <StatCard label="Tanques planeados" value={ind?.tanquesPlaneados ?? 0} />
             <StatCard
               label="Cumplimiento"
               value={`${ind?.cumplimientoPct ?? 0}%`}
-              tone={(ind?.cumplimientoPct ?? 0) >= 95 ? 'success' : (ind?.cumplimientoPct ?? 0) >= 85 ? 'warning' : 'danger'}
+              tone={(ind?.cumplimientoPct ?? 0) >= 95 ? 'success' : (ind?.cumplimientoPct ?? 0) >= 85 ? 'warning' : 'default'}
             />
-            <StatCard
-              label="Eficiencia operativa"
-              value={`${ind?.eficienciaOperativaPct ?? 0}%`}
-              tone={(ind?.eficienciaOperativaPct ?? 0) >= 95 ? 'success' : (ind?.eficienciaOperativaPct ?? 0) >= 85 ? 'warning' : 'danger'}
-            />
+            <StatCard label="Retrasos marcados" value={retrasos} tone={retrasos > 0 ? 'warning' : 'default'} />
           </div>
           <div className="flex flex-wrap gap-2 mt-4">
             <Link href={`/plan/${activa.id}`} className="btn btn-primary btn-lg flex-1 text-center">
               Ver plan del día
             </Link>
-            <Link href={`/plan/${activa.id}/tablero`} className="btn btn-ghost btn-lg flex-1 text-center">
-              Tablero
+            {activa.resultado && (
+              <Link href={`/plan/${activa.id}/hoja`} className="btn btn-success btn-lg flex-1 text-center">
+                Hoja imprimible
+              </Link>
+            )}
+            <Link href={`/plan/${activa.id}/control`} className="btn btn-ghost btn-lg flex-1 text-center">
+              Control
             </Link>
           </div>
         </Card>
@@ -70,21 +65,16 @@ export function InicioView() {
         />
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <Link href="/tablero" className="card p-3 hover:border-foreground/20 transition-colors block">
-          <p className="eyebrow">Tablero</p>
-          <p className="font-semibold mt-1">Avance en vivo</p>
-          <p className="text-xs text-muted-foreground mt-1">Planeado vs. real</p>
-        </Link>
-        <Link href="/indicadores" className="card p-3 hover:border-foreground/20 transition-colors block">
-          <p className="eyebrow">Indicadores</p>
-          <p className="font-semibold mt-1">Eficiencia</p>
-          <p className="text-xs text-muted-foreground mt-1">Planta y operario</p>
-        </Link>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Link href="/historico" className="card p-3 hover:border-foreground/20 transition-colors block">
           <p className="eyebrow">Histórico</p>
           <p className="font-semibold mt-1">{jornadas.filter((j) => j.estado === 'cerrada').length} cierres</p>
-          <p className="text-xs text-muted-foreground mt-1">Consultar jornadas</p>
+          <p className="text-xs text-muted-foreground mt-1">Consultar jornadas anteriores</p>
+        </Link>
+        <Link href="/configuracion" className="card p-3 hover:border-foreground/20 transition-colors block">
+          <p className="eyebrow">Configuración</p>
+          <p className="font-semibold mt-1">Proceso y pausas</p>
+          <p className="text-xs text-muted-foreground mt-1">Parámetros del planificador</p>
         </Link>
       </div>
 

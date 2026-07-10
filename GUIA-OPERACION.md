@@ -12,8 +12,9 @@ En lugar de armar el plan a mano en Excel, el sistema:
 
 1. Toma los datos del día (operarios, tanques disponibles, meta de producción).
 2. **Genera automáticamente** quién hace qué, en qué tanque y a qué hora.
-3. Permite **registrar lo que realmente pasó** en planta.
-4. Muestra **avance planeado vs. real** (tablero e indicadores).
+3. Permite **imprimir una hoja de producción** (tipo Excel) con qué debe pasar cada hora en planta.
+4. Permite **control simple del supervisor** desde PC: a las 8/9/10 ver si van a tiempo (OK / Atrasado).
+5. Opcionalmente registrar avance tarea a tarea (vista avanzada, no es el flujo principal hoy).
 
 > **Importante:** El motor **no busca la solución perfecta del mundo**. Programa por **disponibilidad de recursos** (operarios, tanques, pausas y esperas). Es una herramienta práctica para organizar el día, no un optimizador matemático absoluto.
 
@@ -23,10 +24,10 @@ En lugar de armar el plan a mano en Excel, el sistema:
 
 | Rol | Uso principal |
 |-----|----------------|
-| **Supervisor** | Crear el plan, revisarlo, aprobarlo, ver tablero, cerrar jornada |
-| **Operario** | Ver su lista de tareas del día e indicar inicio/fin (vista operario) |
+| **Supervisor** | Crear el plan, revisarlo, generar hoja imprimible, control por hora, cerrar jornada |
+| **Operario** | (Futuro) Vista por operario en tablet — hoy el flujo principal es la hoja impresa |
 
-La app está pensada para **tablet o celular** en piso de producción.
+La app está pensada para uso del **supervisor en PC** (imprimir hoja, marcar cortes). El registro por operario en tablet queda como función avanzada.
 
 ---
 
@@ -76,6 +77,11 @@ Eso **no es la fórmula completa** — es solo lo que el operario necesita ver e
 Son descansos programados (desayuno, media tarde, etc.). **Bloquean al operario**, no al tanque en espera pasiva.  
 Se configuran en **Configuración → Pausas**.
 
+### Montaje = 2 personas
+El **montaje del tanque requiere 2 operarios** trabajando juntos. Con 2–3 operarios en el turno solo puede haber **1 montaje a la vez**; con 4 operarios, hasta **2 montajes simultáneos** (`operarios ÷ 2`).
+
+Mientras un montaje está en curso, los dos operarios asignados no pueden hacer otra tarea manual. El **pesaje** u otras tareas pueden ejecutarse en paralelo si hay operarios libres (por ejemplo durante una espera pasiva del tanque).
+
 ### Regla de un operario a la vez
 En operaciones **manuales** (pesaje, montaje, celulosa, resina, etc.), **una misma persona solo puede hacer una tarea a la vez**.  
 El plan puede mostrar varios tanques arrancando en paralelo **solo si hay varios operarios libres** al mismo momento.  
@@ -90,15 +96,15 @@ Configurar (una vez o cuando cambie algo)
         ↓
 Crear plan del día
         ↓
-Revisar programación  ←  aquí puedes comparar 2 vs 3 operarios
+Revisar programación  ←  comparar 2 vs 3 operarios
         ↓
-Aprobar plan
+Generar hoja de producción → Imprimir
         ↓
-Ejecutar en planta (registro real o vista operario)
+Control por hora (8 / 9 / 10…) — OK / Atrasado
         ↓
-Seguir tablero e indicadores
+Cierre simple (tanques reales + observación)
         ↓
-Cerrar jornada → queda en histórico
+Queda en histórico
 ```
 
 ### Paso 1 — Configuración (antes o cuando haga falta)
@@ -139,48 +145,44 @@ En **Programación** verás:
 - Alertas (meta en riesgo, cuello de botella, etc.).
 
 **Acciones posibles:**
-- **Aprobar plan del día** — pasa a ejecución.
+- **Generar hoja de producción** — abre la hoja imprimible y marca el plan como activo.
+- **Recalcular** — si cambiaste operarios o tanques después del cálculo.
 - **Descartar** — elimina el plan y vuelves a crear uno nuevo.
 
-> No apruebes sin revisar carga de operarios y hora fin estimada.
+> No imprimas sin revisar carga de operarios, montajes simultáneos y hora fin estimada.
 
-### Paso 4 — Aprobar
-Al aprobar, el plan queda **activo**. El estado cambia de *En revisión* a *Activo*.
+### Paso 4 — Hoja imprimible
+En **Hoja** (o desde Programación → Generar hoja):
 
-A partir de aquí puedes registrar avance real y ver el tablero.
+- Encabezado: fecha, turno, operarios, meta, tanques.
+- **Tabla por hora** con todas las actividades concurrentes en planta.
+- Resumen por tanque e instrucciones de producto.
+- Botón **Imprimir** (o Guardar PDF desde el diálogo del navegador).
 
-### Paso 5 — Ejecutar en planta
+Entrega esta hoja al piso. Es el entregable principal del día.
 
-**Opción A — Registro real (supervisor)**  
-**Plan → Registro real**: lista todas las operaciones. Por cada una:
+### Paso 5 — Control por hora (supervisor en PC)
+En **Control**:
 
-1. **Iniciar** — cuando el operario empieza.
-2. **Finalizar** — cuando termina. Si tardó más de lo estándar, indica motivo de retraso.
+- Selecciona la hora actual (o un corte: 8:00, 9:00, 10:00…).
+- Revisa qué **debía estar pasando** según el plan.
+- Marca cada corte como **OK** o **Atrasado** y anota observaciones.
 
-**Opción B — Vista operario (piso)**  
-Desde el plan, entra a **Vista operario** de cada persona. Muestra:
+No requiere registrar cada tarea individual en tablet.
 
-- Tarea actual o próxima.
-- Instrucción del producto.
-- Botones: Iniciar / Finalizar / Novedad.
+### Paso 6 — Cierre simple
+En **Control** (al final del turno):
 
-La vista operario ocupa **toda la pantalla** (sin menú inferior) para uso en tablet.
+- Ingresa **tanques reales** completados.
+- Escribe observación final si hubo novedades.
+- **Cerrar jornada** — el plan pasa a histórico con cumplimiento y retrasos marcados.
 
-### Paso 6 — Tablero e indicadores
+### Paso 7 — Avanzado (opcional)
+Rutas secundarias (no en menú principal):
 
-**Tablero** — avance en vivo:
-- Galones planeados vs. fabricados.
-- Eficiencia operativa por cortes de tiempo.
-- Botones de **demo**: avanzar 30 min o simular jornada completa.
-
-**Indicadores** — resumen del día:
-- Cumplimiento, eficiencia, tanques terminados, retrasos.
-- Detalle por operario.
-- Campo de observación final.
-- Botón **Cerrar jornada**.
-
-### Paso 7 — Cerrar jornada
-En **Indicadores**, pulsa **Cerrar jornada**. El plan pasa a estado **cerrado** y queda en **Histórico**.
+- **Registro real** — marcar inicio/fin de cada operación.
+- **Vista operario** — pantalla por persona en tablet.
+- **Tablero / KPIs** — simulación demo y métricas detalladas.
 
 ---
 
@@ -190,12 +192,12 @@ En **Indicadores**, pulsa **Cerrar jornada**. El plan pasa a estado **cerrado** 
 |---------------|----------------|
 | **Inicio** | Resumen del plan activo y accesos rápidos |
 | **Plan** | Crear, revisar y gestionar el plan del día |
-| **Tablero** | Avance planeado vs. real |
-| **KPIs** | Indicadores y cierre de jornada |
+| **Hoja** | Hoja de producción imprimible (plan activo) |
+| **Control** | Cortes por hora OK/Atrasado y cierre |
 | **Histórico** | Planes anteriores (filtros por fecha, turno, estado) |
 | **Config** | Operarios, tanques, proceso, pausas, parámetros |
 
-Dentro de un plan activo hay **pestañas**: Resumen, Programación, Por operario, Por tanque, Registro, Tablero, Indicadores.
+Dentro de un plan activo hay **pestañas**: Resumen, Programación, Hoja, Control, Tanque (consulta). Registro y vista operario quedan como rutas avanzadas.
 
 ---
 
@@ -204,7 +206,7 @@ Dentro de un plan activo hay **pestañas**: Resumen, Programación, Por operario
 | Estado | Significado | Qué puedes hacer |
 |--------|-------------|------------------|
 | **En revisión** (borrador) | Plan calculado, no aprobado | Revisar, aprobar o descartar |
-| **Activo** (aprobada) | En ejecución | Registrar avance, tablero, indicadores |
+| **Activo** (aprobada) | En ejecución | Imprimir hoja, control por hora, cierre |
 | **Cerrado** | Jornada terminada | Solo consulta en histórico |
 
 El badge del encabezado (Sin plan / En revisión / Activo / Cerrado) refleja el estado actual.
@@ -240,12 +242,13 @@ El badge del encabezado (Sin plan / En revisión / Activo / Cerrado) refleja el 
 - [ ] ¿Conviene sumar un operario? (usa la comparación 2 vs 3).
 
 ### Durante la ejecución
-- [ ] Marca **inicio y fin real** de cada operación — sin eso los indicadores no reflejan la realidad.
-- [ ] Si un tanque se libera antes (ej. terminó limpieza), puedes **marcarlo disponible** desde la vista por tanque.
-- [ ] Las **esperas de 30 min** del proceso son del tanque; el operario puede estar en otra tarea en paralelo.
+- [ ] Usa la **hoja impresa** en piso como referencia principal.
+- [ ] A cada hora (8, 9, 10…), revisa en **Control** si lo planeado va OK o Atrasado.
+- [ ] Si un tanque se libera antes (ej. terminó limpieza), **márcalo disponible** desde la vista por tanque.
+- [ ] Las **esperas de 30 min** del proceso son del tanque; operarios libres pueden pesar u otra tarea.
 
 ### Al cerrar
-- [ ] Revisa indicadores por operario.
+- [ ] Ingresa **tanques reales** completados.
 - [ ] Escribe **observación final** si hubo novedades del día.
 - [ ] Cierra la jornada para dejar registro en histórico.
 
@@ -277,7 +280,7 @@ En el **Tablero** hay botones de simulación:
 
 ## 11. Resumen en una frase
 
-**Configuras recursos → creas el plan del día → revisas y apruebas → registras qué pasa en planta → miras tablero e indicadores → cierras la jornada.**
+**Configuras recursos → creas el plan del día → revisas → imprimes la hoja → controlas por hora → cierras con tanques reales.**
 
 ---
 

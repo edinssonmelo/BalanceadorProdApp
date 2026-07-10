@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { PlanTabs } from '@/components/PlanTabs';
 import { EmptyState, EstadoBadge, ProgressBar } from '@/components/ui';
 import { offsetToClock, hhmmToMinutes, durationLabel } from '@/lib/domain/time';
+import { tareaAsignadaA, tareaOperarios } from '@/lib/domain/tarea-helpers';
 
 export function PlanOperarioView() {
   const params = useParams();
@@ -34,7 +35,7 @@ export function PlanOperarioView() {
       <div className="space-y-4">
         {operarios.map((o) => {
           const carga = res.cargas.find((c) => c.operarioId === o.id);
-          const tareas = res.tareas.filter((t) => t.operarioId === o.id).sort((a, b) => a.inicioMin - b.inicioMin);
+          const tareas = res.tareas.filter((t) => tareaAsignadaA(t, o.id)).sort((a, b) => a.inicioMin - b.inicioMin);
           const tone = carga?.estadoCarga === 'sobrecarga' ? 'danger' : carga?.estadoCarga === 'baja' ? 'warning' : 'success';
           return (
             <section key={o.id} className="card p-4">

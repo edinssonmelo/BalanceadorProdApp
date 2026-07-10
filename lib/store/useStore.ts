@@ -13,6 +13,7 @@ import type {
   ProductoPlan,
   PausaOperario,
   TareaProgramada,
+  EstadoCorteControl,
 } from '@/lib/domain/types';
 import {
   OPERARIOS_INICIALES,
@@ -72,6 +73,8 @@ interface AppState {
   aprobarJornada: (id: string) => void;
   cerrarJornada: (id: string) => void;
   setObservacionFinal: (id: string, texto: string) => void;
+  marcarCorteControl: (jornadaId: string, horaOffsetMin: number, estado: EstadoCorteControl, observacion?: string) => void;
+  setTanquesReales: (jornadaId: string, cantidad: number) => void;
   eliminarJornada: (id: string) => void;
 
   registrarInicioReal: (jornadaId: string, tareaId: string, min: number) => void;
@@ -231,7 +234,7 @@ export const useStore = create<AppState>()(
           simClockMin: 0,
         };
         const resultado = programarJornada(base, state.parametros);
-        const jornada: Jornada = { ...base, resultado };
+        const jornada: Jornada = { ...base, resultado, cortesControl: [] };
         set((s) => ({
           jornadas: [jornada, ...s.jornadas.filter((j) => j.id !== id)],
           jornadaActivaId: id,
@@ -262,6 +265,26 @@ export const useStore = create<AppState>()(
       setObservacionFinal: (id, texto) =>
         set((s) => ({
           jornadas: s.jornadas.map((j) => (j.id === id ? { ...j, observacionFinal: texto } : j)),
+        })),
+
+      marcarCorteControl: (jornadaId, horaOffsetMin, estado, observacion) =>
+        set((s) => ({
+          jornadas: s.jornadas.map((j) => {
+            if (j.id !== jornadaId) return j;
+            const prev = j.cortesControl ?? [];
+            const rest = prev.filter((c) => c.horaOffsetMin !== horaOffsetMin);
+            return {
+              ...j,
+              cortesControl: [...rest, { horaOffsetMin, estado, observacion }],
+            };
+          }),
+        })),
+
+      setTanquesReales: (jornadaId, cantidad) =>
+        set((s) => ({
+          jornadas: s.jornadas.map((j) =>
+            j.id === jornadaId ? { ...j, tanquesReales: Math.max(0, cantidad) } : j,
+          ),
         })),
 
       eliminarJornada: (id) =>

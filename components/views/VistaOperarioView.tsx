@@ -8,6 +8,7 @@ import { EstadoBadge, EmptyState } from '@/components/ui';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { offsetToClock, hhmmToMinutes, durationLabel } from '@/lib/domain/time';
+import { tareaAsignadaA } from '@/lib/domain/tarea-helpers';
 import { cn } from '@/lib/utils';
 
 export function VistaOperarioView() {
@@ -24,7 +25,7 @@ export function VistaOperarioView() {
   const tareas = useMemo(() => {
     if (!jornada?.resultado) return [];
     return jornada.resultado.tareas
-      .filter((t) => t.operarioId === operarioId)
+      .filter((t) => tareaAsignadaA(t, operarioId))
       .sort((a, b) => a.inicioMin - b.inicioMin);
   }, [jornada, operarioId]);
 

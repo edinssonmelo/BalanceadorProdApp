@@ -27,7 +27,8 @@ Each `Jornada` stores `proceso` and `operariosSnapshot` at creation. Global conf
 | Pausas | Block **operator** via `ajustarVentanaPorPausas`; absolute `HH:mm`, not offset. |
 | Operator pick | Prefer under `cargaMaxima`; else least loaded, then earliest start. |
 | Special op ids | `pesaje`, `montaje` have dedicated branches — do not rename without updating engine. |
-| Montaje | Assigns `tanqueId` to lot; later ops require it. |
+| Task operators | Use `tareaOperarios` / `tareaAsignadaA` in views — montaje tasks have `operarioIds`. |
+| Montaje | Requires **2 operators** (`operariosRequeridos: 2`); max concurrent montajes = `floor(n_ops/2)`. Assigns `tanqueId` to lot; `operarioIds[]` on task. |
 | Time model | Task `inicioMin`/`finMin` are offsets from `horaInicio`; use `lib/domain/time.ts`. |
 | Indicators | `calcularIndicadores`, `calcularCortes` use std accumulators — keep aligned with engine output. |
 

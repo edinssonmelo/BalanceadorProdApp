@@ -5,24 +5,27 @@
 - [x] Design system minimalista claro (shadcn + Lucide)
 - [x] Motor scheduler por eventos + pausas + carga máxima
 - [x] Flujo UX Plan del día (pasos, tabs, empty states)
-- [x] Tablero eficiencia operativa + simular jornada
+- [x] Tablero eficiencia operativa + simular jornada (avanzado)
 - [x] Timeline tanque + comparación operarios
 - [x] Instrucciones visibles por producto
 - [x] Memory bank inicializado
-- [x] `npm run build` exitoso
-- [x] Fix solapamiento operario en motor (commit incremental)
-- [x] Tests Vitest `engine.test.ts`
 - [x] AGENTS.md + `.cursor/rules` + `.cursor/skills`
-- [x] Deploy automático GitHub Actions → ai-server (self-hosted runner)
-- [x] Fix paralelismo (eficiencia 100%, compararOperarios, makespan) + 12 tests
+- [x] Deploy automático GitHub Actions → ai-server
+- [x] Fix paralelismo + compararOperarios + makespan
+- [x] **MVP hoja imprimible**: montaje 2 personas, `/plan/[id]/hoja`, print CSS
+- [x] **Control por hora** + cierre simple (`ControlDiaView`, `cortesControl`)
+- [x] Nav reorientado (Hoja/Control principal; Registro/Operario secundario)
+- [x] 13 tests motor; `npm test` + `npm run build` OK
 
 ## Pendiente (post-demo)
 - [ ] Base de datos y auth
-- [ ] Validación motor con datos reales cliente
+- [ ] Validación hoja + control con cliente en planta
+- [ ] Logo empresa en hoja
 - [ ] Módulo empaque
 - [ ] Reportes mensuales
 
 ## Issues conocidos
-- Motor es heurístico greedy, no óptimo global (copy: "programación por disponibilidad de recursos").
-- Simulación demo usa jitter aleatorio en tareas.
-- Planes existentes en localStorage no se recalculan solos si cambia configuración global (`recalcularJornada` no cableado en UI).
+- Motor heurístico greedy, no óptimo global.
+- Simulación demo usa jitter aleatorio.
+- Planes en localStorage: recalcular manualmente si cambia config global.
+- PDF server-side no implementado (imprimir desde navegador).

@@ -15,7 +15,6 @@ export function ProgramacionView() {
   const router = useRouter();
   const jornada = useStore((s) => s.jornadas.find((j) => j.id === id));
   const parametros = useStore((s) => s.parametros);
-  const aprobarJornada = useStore((s) => s.aprobarJornada);
   const eliminarJornada = useStore((s) => s.eliminarJornada);
   const recalcularJornada = useStore((s) => s.recalcularJornada);
 
@@ -37,9 +36,8 @@ export function ProgramacionView() {
   const planDesactualizado =
     Math.abs(res.finEstimadoMin - comp2.finMin) > 5 || res.tanquesPlaneados !== comp2.tanques;
 
-  const aprobar = () => {
-    aprobarJornada(jornada.id);
-    router.push(`/plan/${jornada.id}/registro`);
+  const generarHoja = () => {
+    router.push(`/plan/${jornada.id}/hoja`);
   };
 
   const descartar = () => {
@@ -71,7 +69,7 @@ export function ProgramacionView() {
         }
       />
       <PlanTabs id={id} />
-      <PasoFlujo pasos={['Crear', 'Revisar', 'Aprobar', 'Ejecutar', 'Cerrar']} actual={1} />
+      <PasoFlujo pasos={['Crear', 'Revisar', 'Hoja', 'Control', 'Cerrar']} actual={1} />
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <StatCard
@@ -163,9 +161,12 @@ export function ProgramacionView() {
         </p>
       </section>
 
-      <button className="btn btn-success btn-lg w-full" onClick={aprobar}>
-        Aprobar plan del día
+      <button className="btn btn-success btn-lg w-full" onClick={generarHoja}>
+        Generar hoja de producción
       </button>
+      <p className="text-xs text-center text-muted-foreground">
+        Imprime la hoja para piso y usa Control para revisar el avance por hora.
+      </p>
     </div>
   );
 }

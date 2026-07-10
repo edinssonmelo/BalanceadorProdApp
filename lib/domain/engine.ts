@@ -13,6 +13,7 @@ import type {
 import type { Parametros } from './defaults';
 import { genId } from './defaults';
 import { hhmmToMinutes } from './time';
+import { tareaAsignadaA } from './tarea-helpers';
 
 interface EngineInput {
   horizonMin: number;
@@ -43,8 +44,19 @@ interface ScheduleCandidate {
   fin: number;
   dur: number;
   operarioId: string | null;
+  operarioIds: string[];
   tanqueId: string;
   sobrecarga: boolean;
+}
+
+function capacidadMontaje(nOperarios: number): number {
+  return Math.floor(nOperarios / 2);
+}
+
+function montajesSolapados(tareas: TareaProgramada[], inicio: number, fin: number): number {
+  return tareas.filter(
+    (t) => t.operacionId === 'montaje' && t.inicioMin < fin - 0.001 && t.finMin > inicio + 0.001,
+  ).length;
 }
 
 function duracionAjustada(base: number, eficiencia: number): number {
@@ -129,6 +141,91 @@ function elegirOperario(
   };
 }
 
+/** Montaje: elige un par de operarios; ambos quedan ocupados hasta fin. */
+function elegirParOperarios(
+  desde: number,
+  tankAt: number,
+  durBase: number,
+  operarios: Operario[],
+  opFreeAt: Record<string, number>,
+  opMinutes: Record<string, number>,
+  horizonMin: number,
+  horaInicioAbs: number,
+  pausas: PausaOperario[],
+): {
+  operarios: [Operario, Operario];
+  inicio: number;
+  fin: number;
+  dur: number;
+  sobrecarga: boolean;
+} | null {
+  if (operarios.length < 2) return null;
+
+  type PairCand = {
+    o1: Operario;
+    o2: Operario;
+    inicio: number;
+    fin: number;
+    dur: number;
+    sobrecarga: boolean;
+    cargaSum: number;
+  };
+
+  const pairs: PairCand[] = [];
+
+  for (let i = 0; i < operarios.length; i++) {
+    for (let j = i + 1; j < operarios.length; j++) {
+      const o1 = operarios[i];
+      const o2 = operarios[j];
+      const dur1 = duracionAjustada(durBase, o1.eficiencia);
+      const dur2 = duracionAjustada(durBase, o2.eficiencia);
+      const libre1 = Math.max(desde, tankAt, opFreeAt[o1.id] ?? 0);
+      const libre2 = Math.max(desde, tankAt, opFreeAt[o2.id] ?? 0);
+      const jointLibre = Math.max(libre1, libre2);
+      const v1 = ajustarVentanaPorPausas(jointLibre, dur1, horaInicioAbs, pausas);
+      const v2 = ajustarVentanaPorPausas(jointLibre, dur2, horaInicioAbs, pausas);
+      const inicio = Math.max(v1.inicio, v2.inicio);
+      const end1 = ajustarVentanaPorPausas(inicio, dur1, horaInicioAbs, pausas).fin;
+      const end2 = ajustarVentanaPorPausas(inicio, dur2, horaInicioAbs, pausas).fin;
+      const fin = Math.max(end1, end2);
+      const dur = fin - inicio;
+      const carga1 =
+        horizonMin > 0 ? Math.round(((opMinutes[o1.id] ?? 0) + dur) / horizonMin) * 100 : 0;
+      const carga2 =
+        horizonMin > 0 ? Math.round(((opMinutes[o2.id] ?? 0) + dur) / horizonMin) * 100 : 0;
+      const sobrecarga = carga1 > o1.cargaMaxima || carga2 > o2.cargaMaxima;
+      pairs.push({
+        o1,
+        o2,
+        inicio,
+        fin,
+        dur,
+        sobrecarga,
+        cargaSum: (opMinutes[o1.id] ?? 0) + (opMinutes[o2.id] ?? 0),
+      });
+    }
+  }
+
+  if (pairs.length === 0) return null;
+
+  const sinSobrecarga = pairs.filter((p) => !p.sobrecarga);
+  const pool = sinSobrecarga.length > 0 ? sinSobrecarga : pairs;
+  pool.sort((a, b) => {
+    if (a.inicio !== b.inicio) return a.inicio - b.inicio;
+    if (a.fin !== b.fin) return a.fin - b.fin;
+    return a.cargaSum - b.cargaSum;
+  });
+
+  const best = pool[0];
+  return {
+    operarios: [best.o1, best.o2],
+    inicio: best.inicio,
+    fin: best.fin,
+    dur: best.dur,
+    sobrecarga: best.sobrecarga,
+  };
+}
+
 /**
  * Motor por eventos: en cada paso programa una operación lista.
  * Paralelismo solo cuando hay recursos distintos libres (operarios/tanques).
@@ -188,6 +285,15 @@ export function programar(input: EngineInput): ResultadoProgramacion {
   if (operariosSel.length === 0) {
     alertas.push({ id: genId('al'), nivel: 'error', mensaje: 'No hay operarios seleccionados para el plan.' });
   }
+  if (operariosSel.length > 0 && operariosSel.length < 2) {
+    alertas.push({
+      id: genId('al'),
+      nivel: 'advertencia',
+      mensaje: 'Montaje requiere mínimo 2 personas. Con 1 operario no se puede montar tanques.',
+    });
+  }
+
+  const capMontaje = capacidadMontaje(operariosSel.length);
 
   function intentarProgramar(lote: LoteState): ScheduleCandidate | null {
     if (lote.completado || lote.opIndex >= opsOrdenadas.length) {
@@ -208,6 +314,7 @@ export function programar(input: EngineInput): ResultadoProgramacion {
         fin,
         dur: op.duracionMin,
         operarioId: null,
+        operarioIds: [],
         tanqueId: lote.tanqueId,
         sobrecarga: false,
       };
@@ -232,19 +339,19 @@ export function programar(input: EngineInput): ResultadoProgramacion {
         fin: pick.fin,
         dur: pick.dur,
         operarioId: pick.operario.id,
+        operarioIds: [pick.operario.id],
         tanqueId: '—',
         sobrecarga: pick.sobrecarga,
       };
     }
 
     if (op.id === 'montaje') {
-      const tanquesLibres = tanquesFisicos.filter((t) => tankFreeAt[t] <= lote.readyAt + 0.001);
-      if (tanquesLibres.length === 0) {
-        const proximoTanque = tanquesFisicos.reduce((best, t) =>
-          tankFreeAt[t] < tankFreeAt[best] ? t : best,
-        );
-        const pick = elegirOperario(
-          Math.max(lote.readyAt, tankFreeAt[proximoTanque]),
+      if (capMontaje === 0) return null;
+
+      const intentarEnTanque = (tanque: string, desde: number): ScheduleCandidate | null => {
+        const pick = elegirParOperarios(
+          desde,
+          tankFreeAt[tanque],
           op.duracionMin,
           operariosSel,
           opFreeAt,
@@ -254,45 +361,34 @@ export function programar(input: EngineInput): ResultadoProgramacion {
           pausas,
         );
         if (!pick) return null;
-        const inicio = Math.max(pick.inicio, tankFreeAt[proximoTanque]);
+        const inicio = Math.max(pick.inicio, tankFreeAt[tanque]);
         const fin = inicio + pick.dur;
+        if (montajesSolapados(tareas, inicio, fin) >= capMontaje) return null;
         return {
           lote,
           op,
           inicio,
           fin,
           dur: pick.dur,
-          operarioId: pick.operario.id,
-          tanqueId: proximoTanque,
+          operarioId: pick.operarios[0].id,
+          operarioIds: [pick.operarios[0].id, pick.operarios[1].id],
+          tanqueId: tanque,
           sobrecarga: pick.sobrecarga,
         };
+      };
+
+      const tanquesLibres = tanquesFisicos.filter((t) => tankFreeAt[t] <= lote.readyAt + 0.001);
+      if (tanquesLibres.length === 0) {
+        const proximoTanque = tanquesFisicos.reduce((best, t) =>
+          tankFreeAt[t] < tankFreeAt[best] ? t : best,
+        );
+        return intentarEnTanque(proximoTanque, Math.max(lote.readyAt, tankFreeAt[proximoTanque]));
       }
 
       let mejor: ScheduleCandidate | null = null;
       for (const tanque of tanquesLibres) {
-        const pick = elegirOperario(
-          Math.max(lote.readyAt, tankFreeAt[tanque]),
-          op.duracionMin,
-          operariosSel,
-          opFreeAt,
-          opMinutes,
-          horizonMin,
-          horaInicioAbs,
-          pausas,
-        );
-        if (!pick) continue;
-        const inicio = Math.max(pick.inicio, tankFreeAt[tanque]);
-        const fin = inicio + pick.dur;
-        const cand: ScheduleCandidate = {
-          lote,
-          op,
-          inicio,
-          fin,
-          dur: pick.dur,
-          operarioId: pick.operario.id,
-          tanqueId: tanque,
-          sobrecarga: pick.sobrecarga,
-        };
+        const cand = intentarEnTanque(tanque, Math.max(lote.readyAt, tankFreeAt[tanque]));
+        if (!cand) continue;
         if (!mejor || cand.inicio < mejor.inicio) mejor = cand;
       }
       return mejor;
@@ -319,6 +415,7 @@ export function programar(input: EngineInput): ResultadoProgramacion {
       fin,
       dur: pick.dur,
       operarioId: pick.operario.id,
+      operarioIds: [pick.operario.id],
       tanqueId: lote.tanqueId,
       sobrecarga: pick.sobrecarga,
     };
@@ -380,13 +477,15 @@ export function programar(input: EngineInput): ResultadoProgramacion {
       lote.tanqueId = cand.tanqueId;
     }
 
-    if (cand.operarioId) {
-      opFreeAt[cand.operarioId] = cand.fin;
-      opMinutes[cand.operarioId] = (opMinutes[cand.operarioId] ?? 0) + cand.dur;
-      if (cand.sobrecarga) {
-        const opSel = operariosSel.find((o) => o.id === cand.operarioId);
-        if (opSel && !sobrecargasRegistradas.has(opSel.id)) {
-          sobrecargasRegistradas.add(opSel.id);
+    if (cand.operarioIds.length > 0) {
+      for (const opId of cand.operarioIds) {
+        opFreeAt[opId] = cand.fin;
+        opMinutes[opId] = (opMinutes[opId] ?? 0) + cand.dur;
+        if (cand.sobrecarga) {
+          const opSel = operariosSel.find((o) => o.id === opId);
+          if (opSel && !sobrecargasRegistradas.has(opSel.id)) {
+            sobrecargasRegistradas.add(opSel.id);
+          }
         }
       }
     }
@@ -402,6 +501,7 @@ export function programar(input: EngineInput): ResultadoProgramacion {
       operacionNombre: op.nombre,
       tipo: op.tipo,
       operarioId: cand.operarioId,
+      operarioIds: cand.operarioIds,
       loteIndex: lote.loteIndex,
       productoNombre: lote.producto.nombre,
       productoInstruccion: lote.producto.instruccionVisible,
@@ -428,7 +528,9 @@ export function programar(input: EngineInput): ResultadoProgramacion {
   const tanquesPlaneados = lotesCompletos.size;
 
   const cargas: CargaOperario[] = operariosSel.map((o) => {
-    const min = tareas.filter((t) => t.operarioId === o.id).reduce((s, t) => s + t.duracionMin, 0);
+    const min = tareas
+      .filter((t) => tareaAsignadaA(t, o.id))
+      .reduce((s, t) => s + t.duracionMin, 0);
     const cargaPct = horizonMin > 0 ? Math.round((min / horizonMin) * 100) : 0;
     let estadoCarga: CargaOperario['estadoCarga'] = 'adecuada';
     if (cargaPct > o.cargaMaxima) estadoCarga = 'sobrecarga';
@@ -644,7 +746,9 @@ export function calcularIndicadores(jornada: Jornada): IndicadoresJornada {
     if (loteCompleto(res.tareas, tanqueId, parseInt(idx, 10))) tanquesTerminados += 1;
   });
 
-  const galonesFabricados = tanquesTerminados * jornada.galonesPorTanque;
+  const galonesFabricados =
+    (jornada.tanquesReales ?? tanquesTerminados) * jornada.galonesPorTanque;
+  const tanquesReales = jornada.tanquesReales ?? tanquesTerminados;
   const cumplimientoPct =
     res.galonesPlaneados > 0 ? Math.round((galonesFabricados / res.galonesPlaneados) * 100) : 0;
 
@@ -677,7 +781,7 @@ export function calcularIndicadores(jornada: Jornada): IndicadoresJornada {
     cumplimientoPct,
     eficienciaPlantaPct,
     tanquesPlaneados: res.tanquesPlaneados,
-    tanquesTerminados,
+    tanquesTerminados: tanquesReales,
     retrasoAcumuladoMin,
     eficienciaOperativaPct,
     stdCompletadoMin: stdRealAlCorte,
@@ -691,7 +795,7 @@ export function calcularIndicadoresOperario(jornada: Jornada): IndicadorOperario
   return jornada.operariosSnapshot
     .filter((o) => jornada.operariosIds.includes(o.id))
     .map((o) => {
-      const tareasOp = res.tareas.filter((t) => t.operarioId === o.id);
+      const tareasOp = res.tareas.filter((t) => tareaAsignadaA(t, o.id));
       const completadas = tareasOp.filter(tareaCompletada);
       const std = completadas.reduce((s, t) => s + t.duracionMin, 0);
       const real = completadas.reduce(

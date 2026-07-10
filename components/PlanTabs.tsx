@@ -7,9 +7,9 @@ import { cn } from '@/lib/utils';
 const TABS = [
   { seg: '', label: 'Resumen' },
   { seg: 'programacion', label: 'Programación' },
+  { seg: 'hoja', label: 'Hoja' },
+  { seg: 'control', label: 'Control' },
   { seg: 'tanque', label: 'Tanque' },
-  { seg: 'operario', label: 'Operario' },
-  { seg: 'registro', label: 'Registro' },
 ];
 
 export function PlanTabs({ id }: { id: string }) {

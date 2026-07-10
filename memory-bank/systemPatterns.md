@@ -13,10 +13,10 @@ flowchart TB
 
 ## Rutas principales
 - `/` Inicio
-- `/plan`, `/plan/nueva`, `/plan/[id]/*`
-- `/tablero`, `/indicadores`, `/historico`
+- `/plan`, `/plan/nueva`, `/plan/[id]/*` — **hoja** (`/hoja`), **control** (`/control`)
+- `/tablero`, `/indicadores` — avanzado / demo
 - `/configuracion`, `/operarios`, `/tanques`
-- `/operario/[jornadaId]/[operarioId]` fullscreen
+- `/operario/[jornadaId]/[operarioId]` fullscreen (secundario)
 
 ## Design system
 - Tema claro minimalista: tokens HSL en `app/globals.css` (`--background`, `--primary`, etc.)
@@ -30,6 +30,7 @@ flowchart TB
 ## Motor (`lib/domain/engine.ts`)
 - Scheduler por eventos: **un candidato por iteración**; actualiza `opFreeAt`/`tankFreeAt` antes del siguiente.
 - **Invariante:** un operario no tiene dos tareas manuales solapadas. Paralelismo solo con operarios/tanques distintos libres.
+- **Montaje:** 2 operarios por tarea; máx. `floor(n_ops/2)` montajes simultáneos; `operarioIds` en `TareaProgramada`.
 - Operario: earliest start → earliest finish (eficiencia) → menor carga.
 - Prioridad de lote: a igual inicio, avanzar lotes ya en curso antes de abrir nuevos.
 - Esperas pasivas (`tipo: pasivo`) bloquean tanque, no operario (operarios pueden pesar/montar otros).

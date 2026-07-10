@@ -100,3 +100,27 @@
 ::-webkit-scrollbar-thumb {
   @apply bg-border rounded-full;
 }
+
+@media print {
+  header,
+  nav,
+  .print\\:hidden {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  main {
+    padding: 0 !important;
+    max-width: none !important;
+  }
+
+  .hoja-print {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+}

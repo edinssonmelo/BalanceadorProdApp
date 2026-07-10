@@ -73,6 +73,7 @@ export function ConfiguracionView() {
                 <th className="px-3 py-3">Operación</th>
                 <th className="px-3 py-3">Tipo</th>
                 <th className="px-3 py-3">Duración (min)</th>
+                <th className="px-3 py-3">Personas</th>
               </tr>
             </thead>
             <tbody>
@@ -93,11 +94,16 @@ export function ConfiguracionView() {
                         onChange={(e) => actualizarOperacion(op.id, { duracionMin: parseInt(e.target.value) || 0 })}
                       />
                     </td>
+                    <td className="px-3 py-3 font-mono text-muted-foreground">
+                      {op.operariosRequeridos ?? (op.requiereOperario ? 1 : 0)}
+                    </td>
                   </tr>
                 ))}
             </tbody>
           </table>
-          <p className="px-3 py-2 text-xs text-muted-foreground">Las esperas pasivas de 30 min son obligatorias.</p>
+          <p className="px-3 py-2 text-xs text-muted-foreground">
+            Montaje requiere 2 personas; máximo de montajes simultáneos = operarios ÷ 2. Las esperas pasivas de 30 min son obligatorias.
+          </p>
         </section>
       )}
 

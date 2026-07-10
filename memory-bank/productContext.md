@@ -3,10 +3,12 @@
 ## Problema
 La planta programa manualmente en Excel; difícil balancear operarios, tanques y esperas de 30 min.
 
-## Valor
-- Programación automática considerando eficiencia y carga máxima por operario.
-- Vista por tanque, por operario y tablero planeado vs real.
-- Instrucciones visibles por color para operario (sin fórmula completa).
+## Valor (MVP validado por cliente)
+- Programación automática con **montaje en equipo** (2 personas).
+- **Hoja de producción imprimible** (tabla por hora, resumen tanque, instrucciones).
+- **Control supervisor** desde PC: cortes OK/Atrasado + cierre con tanques reales.
+- Comparación 2 vs 3 operarios al planificar.
+- Registro tarea-a-tarea y vista operario: secundario (sin tablet en piso hoy).
 
 ## Proceso estándar (8 pasos)
 Pesaje → Montaje → Celulosa 1 → Espera 30 → Celulosa 2 → Espera 30 → Resina → Finalización.
