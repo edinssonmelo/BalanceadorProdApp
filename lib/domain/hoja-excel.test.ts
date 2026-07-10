@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { calcularFusionesVerticales, workbookDistribucionABuffer } from './hoja-excel';
 import { grillaDistribucionExcel } from './hoja';
 import {
@@ -58,11 +60,13 @@ describe('hoja-excel export', () => {
       simClockMin: 0,
     };
     const resultado = programarJornada(jornada, PARAMETROS_INICIALES);
+    const logoBuffer = readFileSync(join(process.cwd(), 'public', 'kolorflex-logo.png'));
     const buffer = await workbookDistribucionABuffer({
       jornada,
       resultado,
       pausas: PARAMETROS_INICIALES.pausas,
       operariosLabel: 'Juan, Camilo',
+      logoBuffer,
     });
     expect(buffer.byteLength).toBeGreaterThan(2000);
     expect(new Uint8Array(buffer)[0]).toBe(0x50); // PK zip header

@@ -11,6 +11,7 @@ import {
   resumenPorTanque,
 } from '@/lib/domain/hoja';
 import { PARAMETROS_INICIALES } from '@/lib/domain/defaults';
+import { KOLORFLEX } from '@/lib/domain/brand';
 import { useState } from 'react';
 
 export function HojaProduccionView() {
@@ -88,10 +89,15 @@ export function HojaProduccionView() {
       <article className="hoja-print bg-white text-black p-6 print:p-4 rounded-lg border print:border-0 print:shadow-none">
         <header className="border-b border-black/20 pb-4 mb-4 flex justify-between gap-4">
           <div>
-            <div className="h-12 w-32 border border-dashed border-black/30 flex items-center justify-center text-xs text-black/50 mb-2">
-              Logo empresa
-            </div>
-            <h1 className="text-base font-bold uppercase tracking-tight">
+            <img
+              src="/kolorflex-logo.png"
+              alt="Kolorflex"
+              className="h-12 w-auto max-w-[220px] object-contain mb-2"
+            />
+            <h1
+              className="text-base font-bold uppercase tracking-tight text-white px-3 py-2 rounded-sm"
+              style={{ backgroundColor: KOLORFLEX.kBlue }}
+            >
               Distribución de proceso en la jornada laboral
             </h1>
             <p className="text-sm mt-1">
@@ -115,10 +121,16 @@ export function HojaProduccionView() {
           <table className="hoja-grid w-full text-[10px] border-collapse min-w-[640px]">
             <thead>
               <tr className="border border-black/40">
-                <th className="border border-black/40 px-1 py-1 w-14 font-bold bg-white">HORA</th>
+                <th
+                  className="border border-black/40 px-1 py-1 w-14 font-bold"
+                  style={{ backgroundColor: KOLORFLEX.kBlue, color: KOLORFLEX.white }}
+                >
+                  HORA
+                </th>
                 <th
                   colSpan={grilla.columnas.length || 1}
-                  className="border border-black/40 px-1 py-1 font-bold text-center bg-white"
+                  className="border border-black/40 px-1 py-1 font-bold text-center"
+                  style={{ backgroundColor: KOLORFLEX.fRed, color: KOLORFLEX.white }}
                 >
                   PRODUCCIÓN
                 </th>

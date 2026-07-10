@@ -1,5 +1,6 @@
 import type { Jornada, PausaOperario, TareaProgramada } from './types';
 import { offsetToClock, hhmmToMinutes } from './time';
+import { colorTanque } from './brand';
 
 export interface FilaHojaHoraria {
   horaOffsetMin: number;
@@ -38,14 +39,14 @@ export interface GrillaDistribucion {
 
 const PASO_MIN = 5;
 
-/** Colores por tanque (como Excel del cliente). */
+/** Colores por tanque (paleta Kolorflex: K azul / F rojo). */
 export const COLORES_TANQUE: Record<string, string> = {
-  T1: '#FFF200',
-  T2: '#BDD7EE',
-  T3: '#F8CBAD',
-  T4: '#C6E0B4',
-  T5: '#D9D2E9',
-  T6: '#E2EFDA',
+  T1: colorTanque('T1'),
+  T2: colorTanque('T2'),
+  T3: colorTanque('T3'),
+  T4: colorTanque('T4'),
+  T5: colorTanque('T5'),
+  T6: colorTanque('T6'),
 };
 
 function tanquePorLote(tareas: TareaProgramada[]): Map<number, string> {

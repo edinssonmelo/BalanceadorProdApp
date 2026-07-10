@@ -6,6 +6,8 @@ import {
   grillaDistribucionExcel,
   resumenPorTanque,
 } from './hoja';
+import { KOLORFLEX } from './brand';
+
 const PAUSA_FILL = 'FF595959';
 const BORDER_THIN = {
   top: { style: 'thin' as const },
@@ -14,11 +16,19 @@ const BORDER_THIN = {
   right: { style: 'thin' as const },
 };
 
+const TITLE_ROW = 1;
+const META_ROW = 2;
+const HEADER_ROW = 4;
+const SUBHEADER_ROW = 5;
+const DATA_START_ROW = 6;
+const TITLE_COL_START = 4;
+
 export interface DatosHojaExcel {
   jornada: Jornada;
   resultado: ResultadoProgramacion;
   pausas: PausaOperario[];
   operariosLabel: string;
+  logoBuffer?: ArrayBuffer | Buffer | null;
 }
 
 function hexArgb(hex: string): string {
@@ -59,6 +69,20 @@ function styleCell(
     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: opts.fill } };
   }
   if (opts.numFmt) cell.numFmt = opts.numFmt;
+}
+
+export async function obtenerLogoKolorflexBuffer(
+  provided?: ArrayBuffer | Buffer | null,
+): Promise<ArrayBuffer | Buffer | null> {
+  if (provided) return provided;
+  if (typeof window === 'undefined') return null;
+  try {
+    const res = await fetch('/kolorflex-logo.png');
+    if (res.ok) return res.arrayBuffer();
+  } catch {
+    return null;
+  }
+  return null;
 }
 
 interface FusionVertical {
@@ -110,15 +134,36 @@ export function calcularFusionesVerticales(grilla: GrillaDistribucion): FusionVe
   return fusiones;
 }
 
+function insertarLogo(
+  wb: ExcelJS.Workbook,
+  ws: ExcelJS.Worksheet,
+  logo: ArrayBuffer | Buffer,
+) {
+  const bytes = logo instanceof ArrayBuffer ? new Uint8Array(logo) : new Uint8Array(logo);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  const base64 = typeof btoa !== 'undefined' ? btoa(binary) : Buffer.from(bytes).toString('base64');
+
+  const imageId = wb.addImage({
+    base64,
+    extension: 'png',
+  });
+  ws.addImage(imageId, {
+    tl: { col: 0, row: 0 },
+    ext: { width: 175, height: 38 },
+  });
+}
+
 export async function generarDistribucionWorkbook(datos: DatosHojaExcel): Promise<ExcelJS.Workbook> {
   const { jornada, resultado, pausas, operariosLabel } = datos;
   const base = baseInicioJornada(jornada);
   const grilla = grillaDistribucionExcel(resultado.tareas, base, pausas);
   const resumen = resumenPorTanque(resultado.tareas, base);
   const fusiones = calcularFusionesVerticales(grilla);
+  const logo = await obtenerLogoKolorflexBuffer(datos.logoBuffer);
 
   const wb = new ExcelJS.Workbook();
-  wb.creator = 'Balanceador de Producción';
+  wb.creator = 'Kolorflex · Balanceador de Producción';
   wb.created = new Date();
 
   const ws = wb.addWorksheet('Distribución', {
@@ -136,54 +181,87 @@ export async function generarDistribucionWorkbook(datos: DatosHojaExcel): Promis
   const colProdInicio = 2;
   const colProdFin = colProdInicio + nTanques - 1;
   const colHora = 1;
+  const tituloCols = Math.max(colProdFin, TITLE_COL_START + 2);
 
+  ws.getRow(TITLE_ROW).height = 30;
+  ws.getRow(META_ROW).height = 22;
   ws.getColumn(colHora).width = 9;
   for (let c = colProdInicio; c <= colProdFin; c++) {
     ws.getColumn(c).width = 24;
   }
+  for (let c = 1; c < TITLE_COL_START; c++) {
+    ws.getColumn(c).width = 14;
+  }
 
-  const tituloCols = Math.max(colProdFin, 6);
-  ws.mergeCells(1, 1, 1, tituloCols);
-  const titleCell = ws.getCell(1, 1);
+  if (logo) insertarLogo(wb, ws, logo);
+
+  ws.mergeCells(TITLE_ROW, TITLE_COL_START, TITLE_ROW, tituloCols);
+  const titleCell = ws.getCell(TITLE_ROW, TITLE_COL_START);
   titleCell.value = 'DISTRIBUCIÓN DE PROCESO EN LA JORNADA LABORAL';
-  styleCell(titleCell, { bold: true, fontSize: 14, align: 'center' });
+  styleCell(titleCell, {
+    bold: true,
+    fontSize: 14,
+    align: 'center',
+    fill: hexArgb(KOLORFLEX.kBlue),
+    color: 'FFFFFFFF',
+  });
 
-  ws.mergeCells(2, 1, 2, tituloCols);
-  const metaCell = ws.getCell(2, 1);
+  ws.mergeCells(META_ROW, TITLE_COL_START, META_ROW, tituloCols);
+  const metaCell = ws.getCell(META_ROW, TITLE_COL_START);
   metaCell.value =
     `${jornada.fecha} · ${jornada.turno} · ${jornada.horaInicio}–${jornada.horaFin}  |  ` +
     `Meta: ${jornada.metaTanques} tanques (${resultado.galonesPlaneados} gal)  |  ` +
     `Operarios: ${operariosLabel}  |  Tanques: ${jornada.tanquesIds.join(', ')}`;
-  styleCell(metaCell, { fontSize: 10, align: 'center', wrap: true });
+  styleCell(metaCell, {
+    fontSize: 10,
+    align: 'center',
+    wrap: true,
+    fill: hexArgb(KOLORFLEX.kBlueSoft),
+    color: hexArgb(KOLORFLEX.kBlue),
+  });
 
-  const headerRow = 4;
-  const subHeaderRow = 5;
-  const dataStartRow = 6;
-
-  ws.getCell(headerRow, colHora).value = 'HORA';
-  styleCell(ws.getCell(headerRow, colHora), { bold: true, align: 'center' });
+  ws.getCell(HEADER_ROW, colHora).value = 'HORA';
+  styleCell(ws.getCell(HEADER_ROW, colHora), {
+    bold: true,
+    align: 'center',
+    fill: hexArgb(KOLORFLEX.kBlue),
+    color: 'FFFFFFFF',
+  });
 
   if (nTanques > 0) {
-    ws.mergeCells(headerRow, colProdInicio, headerRow, colProdFin);
-    const prodHeader = ws.getCell(headerRow, colProdInicio);
+    ws.mergeCells(HEADER_ROW, colProdInicio, HEADER_ROW, colProdFin);
+    const prodHeader = ws.getCell(HEADER_ROW, colProdInicio);
     prodHeader.value = 'PRODUCCIÓN';
-    styleCell(prodHeader, { bold: true, align: 'center' });
+    styleCell(prodHeader, {
+      bold: true,
+      align: 'center',
+      fill: hexArgb(KOLORFLEX.fRed),
+      color: 'FFFFFFFF',
+    });
 
     grilla.columnas.forEach((col, i) => {
-      const cell = ws.getCell(subHeaderRow, colProdInicio + i);
+      const cell = ws.getCell(SUBHEADER_ROW, colProdInicio + i);
       cell.value = col.tanqueId;
-      styleCell(cell, { bold: true, align: 'center', fill: hexArgb(col.color) });
+      styleCell(cell, {
+        bold: true,
+        align: 'center',
+        fill: hexArgb(col.color),
+        color: hexArgb(KOLORFLEX.kBlue),
+      });
     });
-    styleCell(ws.getCell(subHeaderRow, colHora), { bold: true });
+    styleCell(ws.getCell(SUBHEADER_ROW, colHora), {
+      bold: true,
+      fill: hexArgb(KOLORFLEX.kBlueSoft),
+    });
   }
 
   const celdasFusionadas = new Set<string>();
 
   grilla.filas.forEach((fila, filaIndex) => {
-    const row = dataStartRow + filaIndex;
+    const row = DATA_START_ROW + filaIndex;
     const horaCell = ws.getCell(row, colHora);
     horaCell.value = clockToExcelDate(fila.horaLabel);
-    styleCell(horaCell, { numFmt: 'hh:mm', align: 'center' });
+    styleCell(horaCell, { numFmt: 'hh:mm', align: 'center', fill: hexArgb(KOLORFLEX.kBlueSoft) });
 
     if (fila.pausaNombre) {
       ws.mergeCells(row, colProdInicio, row, colProdFin);
@@ -198,7 +276,12 @@ export async function generarDistribucionWorkbook(datos: DatosHojaExcel): Promis
       const entradaCell = ws.getCell(row, colProdInicio);
       entradaCell.value =
         grilla.columnas[0] ? fila.celdas[grilla.columnas[0].tanqueId]?.texto ?? '' : '';
-      styleCell(entradaCell, { bold: true, align: 'center' });
+      styleCell(entradaCell, {
+        bold: true,
+        align: 'center',
+        fill: hexArgb(KOLORFLEX.kBlueSoft),
+        color: hexArgb(KOLORFLEX.kBlue),
+      });
       return;
     }
 
@@ -221,8 +304,8 @@ export async function generarDistribucionWorkbook(datos: DatosHojaExcel): Promis
 
   for (const fusion of fusiones) {
     const col = colProdInicio + fusion.colIndex;
-    const startRow = dataStartRow + fusion.filaInicio;
-    const endRow = dataStartRow + fusion.filaFin;
+    const startRow = DATA_START_ROW + fusion.filaInicio;
+    const endRow = DATA_START_ROW + fusion.filaFin;
     if (endRow <= startRow) continue;
 
     ws.mergeCells(startRow, col, endRow, col);
@@ -239,27 +322,54 @@ export async function generarDistribucionWorkbook(datos: DatosHojaExcel): Promis
     });
   }
 
-  const footerRow = dataStartRow + grilla.filas.length + 1;
+  const footerRow = DATA_START_ROW + grilla.filas.length + 1;
   ws.mergeCells(footerRow, colHora, footerRow, colProdFin);
   const footerCell = ws.getCell(footerRow, colHora);
-  footerCell.value = `FIN DE LA JORNADA · ${jornada.turno.toUpperCase()}`;
-  styleCell(footerCell, { bold: true, align: 'center', fontSize: 10 });
+  footerCell.value = `FIN DE LA JORNADA · ${jornada.turno.toUpperCase()} · KOLORFLEX`;
+  styleCell(footerCell, {
+    bold: true,
+    align: 'center',
+    fontSize: 10,
+    fill: hexArgb(KOLORFLEX.fRed),
+    color: 'FFFFFFFF',
+  });
 
-  agregarHojaResumen(wb, resumen);
+  await agregarHojaResumen(wb, resumen, logo);
 
   return wb;
 }
 
-function agregarHojaResumen(wb: ExcelJS.Workbook, resumen: ResumenTanqueHoja[]) {
+async function agregarHojaResumen(
+  wb: ExcelJS.Workbook,
+  resumen: ResumenTanqueHoja[],
+  logo: ArrayBuffer | Buffer | null,
+) {
   const ws = wb.addWorksheet('Resumen');
+  if (logo) insertarLogo(wb, ws, logo);
+
+  ws.mergeCells(1, 4, 1, 8);
+  const title = ws.getCell(1, 4);
+  title.value = 'RESUMEN POR TANQUE';
+  styleCell(title, {
+    bold: true,
+    fontSize: 12,
+    align: 'center',
+    fill: hexArgb(KOLORFLEX.kBlue),
+    color: 'FFFFFFFF',
+  });
+
   const headers = ['Tanque', 'Producto', 'Inicio', 'Cel. 1', 'Cel. 2', 'Resina', 'Fin', 'Instrucción'];
   headers.forEach((h, i) => {
-    const cell = ws.getCell(1, i + 1);
+    const cell = ws.getCell(3, i + 1);
     cell.value = h;
-    styleCell(cell, { bold: true, fill: 'FFE7E6E6' });
+    styleCell(cell, {
+      bold: true,
+      fill: hexArgb(i % 2 === 0 ? KOLORFLEX.kBlueLight : KOLORFLEX.fRedLight),
+      color: hexArgb(KOLORFLEX.kBlue),
+    });
   });
   resumen.forEach((r, idx) => {
-    const row = idx + 2;
+    const row = idx + 4;
     const vals = [
       r.tanqueId,
       r.producto,
@@ -289,12 +399,13 @@ export async function workbookDistribucionABuffer(datos: DatosHojaExcel): Promis
 export function nombreArchivoDistribucion(jornada: Jornada): string {
   const fecha = jornada.fecha.replace(/-/g, '');
   const turno = jornada.turno.toLowerCase().replace(/\s+/g, '-');
-  return `distribucion-proceso-${fecha}-${turno}.xlsx`;
+  return `kolorflex-distribucion-${fecha}-${turno}.xlsx`;
 }
 
 /** Descarga el Excel en el navegador (solo cliente). */
 export async function descargarDistribucionExcel(datos: DatosHojaExcel): Promise<void> {
-  const buffer = await workbookDistribucionABuffer(datos);
+  const logoBuffer = await obtenerLogoKolorflexBuffer(datos.logoBuffer);
+  const buffer = await workbookDistribucionABuffer({ ...datos, logoBuffer });
   const blob = new Blob([buffer], {
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   });
