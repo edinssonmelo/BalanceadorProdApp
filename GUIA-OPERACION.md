@@ -74,6 +74,11 @@ Eso **no es la fórmula completa** — es solo lo que el operario necesita ver e
 Son descansos programados (desayuno, media tarde, etc.). **Bloquean al operario**, no al tanque en espera pasiva.  
 Se configuran en **Configuración → Pausas**.
 
+### Regla de un operario a la vez
+En operaciones **manuales** (pesaje, montaje, celulosa, resina, etc.), **una misma persona solo puede hacer una tarea a la vez**.  
+El plan puede mostrar varios tanques arrancando en paralelo **solo si hay varios operarios libres** al mismo momento.  
+Con 1 operario, los pesajes salen uno tras otro. Con 2 operarios, como máximo 2 pesajes pueden coincidir en hora.
+
 ---
 
 ## 4. Flujo del día (paso a paso)
@@ -226,6 +231,7 @@ El badge del encabezado (Sin plan / En revisión / Activo / Cerrado) refleja el 
 - [ ] Pausas del día configuradas si aplican.
 
 ### Al revisar la programación
+- [ ] ¿Los **inicios por operario** son humanamente posibles? (nadie con dos tareas manuales a la misma hora)
 - [ ] ¿La **hora fin estimada** cabe en el turno?
 - [ ] ¿Algún operario está en **sobrecarga**?
 - [ ] ¿La **meta de tanques** es alcanzable o hay alerta de riesgo?

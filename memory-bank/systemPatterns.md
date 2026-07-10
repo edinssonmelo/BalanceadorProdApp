@@ -28,9 +28,15 @@ flowchart TB
 - Clases legacy `.btn`, `.card`, `.field-input` en globals para vistas existentes
 
 ## Motor (`lib/domain/engine.ts`)
-- Scheduler por eventos: lotes en paralelo, operario por menor carga, respeta carga máxima y pausas.
+- Scheduler por eventos: **un candidato por iteración**; actualiza `opFreeAt`/`tankFreeAt` antes del siguiente.
+- **Invariante:** un operario no tiene dos tareas manuales solapadas. Paralelismo solo con operarios/tanques distintos libres.
+- Operario por menor carga; respeta carga máxima y pausas.
+- Esperas pasivas (`tipo: pasivo`) bloquean tanque, no operario.
 - `compararOperarios()` para escenarios 2 vs 3 ops.
-- Cortes con `stdPlaneadoAcum` / `stdRealAcum` / `eficienciaOperativaPct`.
+- Tests: `lib/domain/engine.test.ts` (`npm test`).
+
+## Agent guardrails
+- `AGENTS.md`, `.cursor/rules/`, `.cursor/skills/change-scheduler`, `.cursor/skills/verify-scheduling`.
 
 ## Estado
 - Zustand + persist localStorage.

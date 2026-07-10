@@ -127,8 +127,9 @@ function elegirOperario(
 }
 
 /**
- * Motor por eventos: en cada paso programa la operación lista que puede iniciar antes,
- * permitiendo solapamiento real entre lotes (pesaje/montaje en paralelo).
+ * Motor por eventos: en cada paso programa una operación lista.
+ * Paralelismo solo cuando hay recursos distintos libres (operarios/tanques).
+ * Un operario nunca tiene dos tareas manuales solapadas.
  */
 export function programar(input: EngineInput): ResultadoProgramacion {
   const {
@@ -357,59 +358,56 @@ export function programar(input: EngineInput): ResultadoProgramacion {
     }
 
     candidatos.sort((a, b) => a.inicio - b.inicio || a.lote.loteIndex - b.lote.loteIndex);
-    const batchAtTime = candidatos.filter((c) => c.inicio <= candidatos[0].inicio + 0.001);
+    const cand = candidatos[0];
+    const { lote, op } = cand;
 
-    for (const cand of batchAtTime) {
-      const { lote, op } = cand;
+    if (cand.fin > horizonMin) {
+      lote.completado = true;
+      continue;
+    }
 
-      if (cand.fin > horizonMin) {
-        lote.completado = true;
-        continue;
-      }
+    if (op.id === 'montaje') {
+      lote.tanqueId = cand.tanqueId;
+    }
 
-      if (op.id === 'montaje') {
-        lote.tanqueId = cand.tanqueId;
-      }
-
-      if (cand.operarioId) {
-        opFreeAt[cand.operarioId] = cand.fin;
-        opMinutes[cand.operarioId] = (opMinutes[cand.operarioId] ?? 0) + cand.dur;
-        if (cand.sobrecarga) {
-          const op = operariosSel.find((o) => o.id === cand.operarioId);
-          if (op && !sobrecargasRegistradas.has(op.id)) {
-            sobrecargasRegistradas.add(op.id);
-          }
+    if (cand.operarioId) {
+      opFreeAt[cand.operarioId] = cand.fin;
+      opMinutes[cand.operarioId] = (opMinutes[cand.operarioId] ?? 0) + cand.dur;
+      if (cand.sobrecarga) {
+        const opSel = operariosSel.find((o) => o.id === cand.operarioId);
+        if (opSel && !sobrecargasRegistradas.has(opSel.id)) {
+          sobrecargasRegistradas.add(opSel.id);
         }
       }
-
-      if (lote.tanqueId && lote.tanqueId !== '—') {
-        tankFreeAt[lote.tanqueId] = cand.fin;
-      }
-
-      tareas.push({
-        id: genId('tk'),
-        tanqueId: cand.tanqueId,
-        operacionId: op.id,
-        operacionNombre: op.nombre,
-        tipo: op.tipo,
-        operarioId: cand.operarioId,
-        loteIndex: lote.loteIndex,
-        productoNombre: lote.producto.nombre,
-        productoInstruccion: lote.producto.instruccionVisible,
-        inicioMin: cand.inicio,
-        finMin: cand.fin,
-        duracionMin: cand.dur,
-        estado: 'programado',
-        realInicioMin: null,
-        realFinMin: null,
-        motivoRetrasoId: null,
-        observacion: null,
-      });
-
-      lote.opIndex += 1;
-      lote.readyAt = cand.fin;
-      if (lote.opIndex >= opsOrdenadas.length) lote.completado = true;
     }
+
+    if (lote.tanqueId && lote.tanqueId !== '—') {
+      tankFreeAt[lote.tanqueId] = cand.fin;
+    }
+
+    tareas.push({
+      id: genId('tk'),
+      tanqueId: cand.tanqueId,
+      operacionId: op.id,
+      operacionNombre: op.nombre,
+      tipo: op.tipo,
+      operarioId: cand.operarioId,
+      loteIndex: lote.loteIndex,
+      productoNombre: lote.producto.nombre,
+      productoInstruccion: lote.producto.instruccionVisible,
+      inicioMin: cand.inicio,
+      finMin: cand.fin,
+      duracionMin: cand.dur,
+      estado: 'programado',
+      realInicioMin: null,
+      realFinMin: null,
+      motivoRetrasoId: null,
+      observacion: null,
+    });
+
+    lote.opIndex += 1;
+    lote.readyAt = cand.fin;
+    if (lote.opIndex >= opsOrdenadas.length) lote.completado = true;
   }
 
   const lotesCompletos = new Set(

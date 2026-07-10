@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { useStore } from '@/lib/store/useStore';
 import { PageHeader } from '@/components/PageHeader';
@@ -12,6 +12,7 @@ const SECCIONES = [
   { id: 'pausas', label: 'Pausas' },
   { id: 'motivos', label: 'Motivos de retraso' },
   { id: 'parametros', label: 'Parámetros' },
+  { id: 'datos', label: 'Datos demo' },
 ] as const;
 
 export function ConfiguracionView() {
@@ -25,9 +26,14 @@ export function ConfiguracionView() {
   const agregarPausa = useStore((s) => s.agregarPausa);
   const eliminarPausa = useStore((s) => s.eliminarPausa);
   const actualizarPausa = useStore((s) => s.actualizarPausa);
+  const exportarDatosDemo = useStore((s) => s.exportarDatosDemo);
+  const importarDatosDemo = useStore((s) => s.importarDatosDemo);
+  const reiniciarDatosDemo = useStore((s) => s.reiniciarDatosDemo);
 
   const [seccion, setSeccion] = useState<(typeof SECCIONES)[number]['id']>('proceso');
   const [nuevoMotivo, setNuevoMotivo] = useState('');
+  const [importError, setImportError] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   return (
     <div className="space-y-4">
@@ -162,6 +168,53 @@ export function ConfiguracionView() {
               />
             </div>
           ))}
+        </section>
+      )}
+
+      {seccion === 'datos' && (
+        <section className="card p-4 space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Los datos de la demo se guardan en el navegador (localStorage). Exporta un respaldo para analizarlo,
+            impórtalo en otro equipo o reinicia todo para empezar de cero.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className="btn btn-primary" onClick={() => exportarDatosDemo()}>
+              Exportar datos (JSON)
+            </button>
+            <button type="button" className="btn btn-ghost" onClick={() => fileRef.current?.click()}>
+              Importar datos
+            </button>
+            <button
+              type="button"
+              className="btn btn-danger"
+              onClick={() => {
+                if (confirm('¿Reiniciar todos los datos de la demo? Se perderán planes, operarios editados y configuración guardada en este navegador.')) {
+                  reiniciarDatosDemo();
+                }
+              }}
+            >
+              Reiniciar datos
+            </button>
+          </div>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="application/json,.json"
+            className="hidden"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              setImportError(null);
+              try {
+                const text = await file.text();
+                importarDatosDemo(text);
+              } catch (err) {
+                setImportError(err instanceof Error ? err.message : 'No se pudo importar el archivo.');
+              }
+              e.target.value = '';
+            }}
+          />
+          {importError && <p className="text-xs text-red-600">{importError}</p>}
         </section>
       )}
     </div>

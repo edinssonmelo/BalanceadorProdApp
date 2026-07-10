@@ -1,0 +1,25 @@
+# Despliegue demo en ai-server (Traefik + Cloudflare Tunnel).
+# Patrón igual que openwhispr: red externa net_internal + labels Traefik.
+#
+# Uso en servidor:
+#   docker compose -p balanceador-demo up -d --build --force-recreate
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: balanceador-demo-web
+    container_name: balanceador-demo-web
+    restart: unless-stopped
+    networks:
+      - net_internal
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.balanceador-demo.rule=Host(`demo-balanceador.rootoz.com`) || Host(`demo-balanceador.roootoz.com`)"
+      - "traefik.http.routers.balanceador-demo.entrypoints=web"
+      - "traefik.http.services.balanceador-demo.loadbalancer.server.port=3000"
+
+networks:
+  net_internal:
+    external: true

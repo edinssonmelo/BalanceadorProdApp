@@ -19,3 +19,5 @@ localStorage + botones simular jornada para presentación al cliente.
 
 ## Documentación operativa
 - `GUIA-OPERACION.md` — guía simple para supervisores y operarios (flujo, conceptos, limitaciones).
+- `docs/DEPLOY.md` — despliegue en ai-server + CI/CD GitHub Actions.
+- `AGENTS.md` — guía para agentes/desarrolladores (invariantes del motor).

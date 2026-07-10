@@ -1,0 +1,100 @@
+# CI/CD — Balanceador demo en ai-server
+#
+# Modos (Settings → Secrets and variables → Actions → Variables):
+#   DEPLOY_SELF_HOSTED = true  → runner self-hosted en ai-server (recomendado)
+#   DEPLOY_VIA_SSH     = true  → SSH desde ubuntu-latest (requiere host alcanzable)
+#
+# Solo activa uno. Si ambos false, solo corre CI en push a main.
+#
+# Self-hosted: registrar runner en este repo (ver docs/DEPLOY.md).
+# SSH: secrets DEPLOY_SSH_HOST, DEPLOY_SSH_USER, DEPLOY_SSH_KEY
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-balanceador-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: Build (gate)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
+
+  configure-hint:
+    name: Deploy desactivado
+    needs: ci
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'push' &&
+      vars.DEPLOY_VIA_SSH != 'true' &&
+      vars.DEPLOY_SELF_HOSTED != 'true'
+    steps:
+      - run: |
+          echo "::notice title=Deploy manual::Activa DEPLOY_SELF_HOSTED o DEPLOY_VIA_SSH. Ver docs/DEPLOY.md"
+
+  deploy-conflict:
+    name: Variables contradictorias
+    needs: ci
+    runs-on: ubuntu-latest
+    if: vars.DEPLOY_VIA_SSH == 'true' && vars.DEPLOY_SELF_HOSTED == 'true'
+    steps:
+      - run: |
+          echo "::error::Activa solo DEPLOY_VIA_SSH o DEPLOY_SELF_HOSTED."
+          exit 1
+
+  deploy-self-hosted:
+    name: Deploy (self-hosted ai-server)
+    needs: ci
+    runs-on: self-hosted
+    if: vars.DEPLOY_SELF_HOSTED == 'true' && vars.DEPLOY_VIA_SSH != 'true'
+    steps:
+      - name: Pull + Docker rebuild
+        run: |
+          set -euo pipefail
+          APP_DIR="${APP_DIR:-/srv/apps/balanceador-demo}"
+          cd "$APP_DIR"
+          git fetch origin "${{ github.ref_name }}"
+          git checkout "${{ github.ref_name }}"
+          git reset --hard "origin/${{ github.ref_name }}"
+          chmod +x scripts/deploy.sh
+          APP_DIR="$APP_DIR" BRANCH="${{ github.ref_name }}" ./scripts/deploy.sh
+
+  deploy-ssh:
+    name: Deploy via SSH
+    needs: ci
+    runs-on: ubuntu-latest
+    if: vars.DEPLOY_VIA_SSH == 'true' && vars.DEPLOY_SELF_HOSTED != 'true'
+    steps:
+      - name: SSH deploy
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_SSH_HOST }}
+          username: ${{ secrets.DEPLOY_SSH_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script_stop: true
+          command_timeout: 25m
+          script: |
+            set -euo pipefail
+            APP_DIR="${APP_DIR:-/srv/apps/balanceador-demo}"
+            cd "$APP_DIR"
+            git fetch origin "${{ github.ref_name }}"
+            git checkout "${{ github.ref_name }}"
+            git reset --hard "origin/${{ github.ref_name }}"
+            chmod +x scripts/deploy.sh
+            APP_DIR="$APP_DIR" BRANCH="${{ github.ref_name }}" ./scripts/deploy.sh

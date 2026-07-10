@@ -1,0 +1,13 @@
+---
+description: Core project context and conventions
+alwaysApply: true
+---
+
+# Balanceador — reglas base
+
+- Leer `memory-bank/` antes de trabajo significativo; actualizar `activeContext.md` y `progress.md` al terminar.
+- Stack: Next.js 15 App Router, React 19, Zustand persist (`balanceador-produccion-v2`), Tailwind + `components/ui/*`.
+- Dominio en `lib/domain/`; vistas en `components/views/`; rutas en `app/`.
+- UI en español; copy **"Plan del día"** (no "Jornada" en interfaz).
+- Cambios mínimos y enfocados; `npm test` + `npm run build` antes de cerrar.
+- Docs: `AGENTS.md`, `GUIA-OPERACION.md`, `docs/DEPLOY.md`.

@@ -14,6 +14,7 @@
 npm run dev    # desarrollo
 npm run build  # producción
 npm start      # servir build
+npm test       # tests del motor (Vitest)
 ```
 
 ## Estructura

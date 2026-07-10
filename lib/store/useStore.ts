@@ -89,6 +89,10 @@ interface AppState {
 
   jornadaActiva: () => Jornada | undefined;
   jornadaPorId: (id: string) => Jornada | undefined;
+
+  exportarDatosDemo: () => void;
+  importarDatosDemo: (json: string) => void;
+  reiniciarDatosDemo: () => void;
 }
 
 function mapTareas(
@@ -146,6 +150,8 @@ function migrarJornada(j: Jornada): Jornada {
     simClockMin: j.simClockMin ?? 0,
   };
 }
+
+export const PERSIST_KEY = 'balanceador-produccion-v2';
 
 export const useStore = create<AppState>()(
   persist(
@@ -333,9 +339,47 @@ export const useStore = create<AppState>()(
         return s.jornadas.find((j) => j.id === s.jornadaActivaId);
       },
       jornadaPorId: (id) => get().jornadas.find((j) => j.id === id),
+
+      exportarDatosDemo: () => {
+        if (typeof window === 'undefined') return;
+        const raw = localStorage.getItem(PERSIST_KEY);
+        const payload = {
+          version: 2,
+          exportedAt: new Date().toISOString(),
+          data: raw ? JSON.parse(raw) : null,
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `balanceador-demo-${new Date().toISOString().slice(0, 10)}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+      },
+
+      importarDatosDemo: (json) => {
+        if (typeof window === 'undefined') return;
+        const parsed = JSON.parse(json) as { data?: { state?: unknown }; state?: unknown } | { state?: unknown };
+        const state = 'data' in parsed && parsed.data && typeof parsed.data === 'object' && 'state' in parsed.data
+          ? parsed.data.state
+          : 'state' in parsed
+            ? parsed.state
+            : parsed;
+        if (!state || typeof state !== 'object') {
+          throw new Error('Archivo inválido: no contiene estado de la app.');
+        }
+        localStorage.setItem(PERSIST_KEY, JSON.stringify({ state, version: 0 }));
+        window.location.reload();
+      },
+
+      reiniciarDatosDemo: () => {
+        if (typeof window === 'undefined') return;
+        useStore.persist.clearStorage();
+        window.location.reload();
+      },
     }),
     {
-      name: 'balanceador-produccion-v2',
+      name: PERSIST_KEY,
       merge: (persisted, current) => {
         const p = persisted as Partial<AppState>;
         return {

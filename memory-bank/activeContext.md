@@ -1,16 +1,18 @@
 # Contexto activo
 
-## Última sesión (2026-07-09)
-Rediseño UI: tema **minimalista claro**, compacto y profesional (sustituye diseño industrial oscuro).
+## Última sesión (2026-07-10)
+Fix crítico del motor: **un operario = una operación manual a la vez**. Guardrails del agente añadidos al repo.
 
 ## Hecho
-- Stack UI: **shadcn-style** (`components/ui/*`), **Lucide** icons, **Inter**, tokens HSL zinc/neutral.
-- `AppShell`: header h-12, nav inferior con iconos Lucide, fondo claro.
-- Vistas unificadas: tipografía `font-semibold`, `text-muted-foreground`, cards compactas.
-- Motor, flujo Plan del día, localStorage y rutas sin cambios funcionales.
-- `npm run build` exitoso.
+- Motor: commit incremental (ya no `batchAtTime` ciego); elimina pesajes simultáneos imposibles en el mismo operario.
+- Vitest + `lib/domain/engine.test.ts` (4 tests de invariante).
+- `AGENTS.md`, `.cursor/rules/*`, `.cursor/skills/*`.
+- Memory bank y `GUIA-OPERACION.md` actualizados.
+
+## Feedback cliente
+"No puede pesar seis tanques a la misma hora" — resuelto en motor; con 2 operarios máx. 2 arranques paralelos de pesaje.
 
 ## Próximos pasos sugeridos
-- Validar motor con datos reales del cliente.
-- Migrar persistencia a DB cuando aprueben demo.
-- Auth/roles para supervisor vs operario.
+- Redesplegar demo en ai-server tras push.
+- Validar con datos reales del cliente.
+- Opcional: `recalcularJornada` desde configuración cuando cambie proceso/pausas.

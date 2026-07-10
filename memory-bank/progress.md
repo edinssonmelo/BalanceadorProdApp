@@ -10,6 +10,9 @@
 - [x] Instrucciones visibles por producto
 - [x] Memory bank inicializado
 - [x] `npm run build` exitoso
+- [x] Fix solapamiento operario en motor (commit incremental)
+- [x] Tests Vitest `engine.test.ts`
+- [x] AGENTS.md + `.cursor/rules` + `.cursor/skills`
 
 ## Pendiente (post-demo)
 - [ ] Base de datos y auth
@@ -20,3 +23,4 @@
 ## Issues conocidos
 - Motor es heurístico greedy, no óptimo global (copy: "programación por disponibilidad de recursos").
 - Simulación demo usa jitter aleatorio en tareas.
+- Planes existentes en localStorage no se recalculan solos si cambia configuración global (`recalcularJornada` no cableado en UI).

@@ -1,0 +1,15 @@
+---
+description: Production scheduler invariants and change guardrails
+globs: lib/domain/{engine,types,defaults,time}.ts
+alwaysApply: false
+---
+
+# Motor de programación
+
+- **Solo** `programar()` implementa asignación. API exportada: `programarJornada`, `compararOperarios`, `calcularIndicadores`, `calcularCortes`.
+- **Invariante crítica:** un operario no puede tener dos tareas manuales solapadas. Confirmar **un** candidato por iteración y actualizar `opFreeAt` antes del siguiente.
+- Paralelismo legítimo: operarios distintos libres, o esperas pasivas en tanques distintos.
+- Preservar: pausas (`ajustarVentanaPorPausas`), `duracionAjustada(eficiencia)`, `MAX_ITER`, maps `tankFreeAt`/`opFreeAt`.
+- No renombrar `pesaje`/`montaje` sin actualizar ramas en `intentarProgramar`.
+- No convertir a optimizador global sin tarea explícita.
+- Tests en `lib/domain/engine.test.ts`; correr `npm test` tras cambios.

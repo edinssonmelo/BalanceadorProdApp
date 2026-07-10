@@ -1,0 +1,14 @@
+---
+description: Store and UI boundaries for plan scheduling
+globs: "{lib/store/useStore.ts,components/views/{Programacion,CrearPlan,Tablero,Configuracion,PlanTanque,PlanOperario}*.tsx,app/plan/**/*.tsx}"
+alwaysApply: false
+---
+
+# UI y store — programación
+
+- Las vistas **muestran** `jornada.resultado`; no calculan horarios ni asignan operarios.
+- Nuevos disparadores de programación deben llamar `programarJornada(jornada, parametros)`.
+- `registrarInicioReal` / `registrarFinReal` mutan estado real; no reordenan el plan.
+- `compararOperarios` es what-if de solo lectura; misma ruta del motor.
+- Si cambia `proceso`/`operarios`/`pausas` globalmente, considerar `recalcularJornada` en planes abiertos.
+- Botones de simulación demo no alteran `inicioMin`/`finMin` planeados.
