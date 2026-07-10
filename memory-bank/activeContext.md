@@ -1,21 +1,20 @@
 # Contexto activo
 
 ## Última sesión (2026-07-10)
-Despliegue automático activo: runner `ai-server-balanceador` + `DEPLOY_SELF_HOSTED=true`. Push a `main` despliega en demo.
+Análisis exhaustivo del motor vs Excel/demo JSON. Fixes de paralelismo y comparación 2 vs 3 ops.
+
+## Hallazgos
+- Desfase T1/T2 de 1 min: Camilo con eficiencia 85% → pesaje 6 min (no bug de paralelismo).
+- "2 y 3 ops mismo fin": bug en `compararOperarios` (solo miraba ops del plan).
+- Con eficiencia 100%: 1 op → 11:45, 2 → 10:30, 3 → 09:45. Arranque simétrico 07:35.
 
 ## Hecho
-- Motor: commit incremental (ya no `batchAtTime` ciego); elimina pesajes simultáneos imposibles en el mismo operario.
-- Vitest + `lib/domain/engine.test.ts` (4 tests de invariante).
-- `AGENTS.md`, `.cursor/rules/*`, `.cursor/skills/*`.
-- CI/CD: workflow Deploy verificado (run 29102756594 OK); servidor en `ca3650b`.
-- Runner self-hosted en `/srv/actions-runner/balanceador-prod-app`.
-
-## Feedback cliente
-"No puede pesar seis tanques a la misma hora" — resuelto en motor; con 2 operarios máx. 2 arranques paralelos de pesaje.
-
-## UI programación (2026-07-10)
-- Botón Recalcular, aviso plan desactualizado, etiquetas lotes vs tanques físicos.
-- Agente: commit + push automático a `main` documentado en `AGENTS.md`.
+- Defaults eficiencia 100% (tiempos estándar).
+- `elegirOperario`: inicio → fin → carga (makespan).
+- Prioridad lotes en curso; `compararOperarios` usa snapshot completo.
+- 12 tests (paralelismo, espera+trabajo, 2 vs 3, Excel).
+- Push `b323e29` a main (deploy automático).
 
 ## Próximos pasos sugeridos
-- Validar con datos reales del cliente.
+- En demo: Configuración → Datos demo → Reiniciar (limpia eficiencias viejas 85/70).
+- Validar con cliente en planta.
