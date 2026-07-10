@@ -34,6 +34,16 @@ export function CrearPlanView() {
   const tanquesDisponibles = tanques.filter((t) => t.estado === 'disponible');
   const tanquesBloqueados = tanques.filter((t) => t.estado !== 'disponible');
 
+  const avisos = useMemo(() => {
+    const a: string[] = [];
+    if (metaTanques > tanquesDisponibles.length && tanquesDisponibles.length > 0) {
+      a.push(
+        `Solo ${tanquesDisponibles.length} tanque(s) disponible(s): los lotes se encadenan en serie y reutilizan tanques (no ${metaTanques} tanques físicos a la vez).`,
+      );
+    }
+    return a;
+  }, [metaTanques, tanquesDisponibles.length]);
+
   const errores = useMemo(() => {
     const e: string[] = [];
     if (selOperarios.length === 0) e.push('Selecciona al menos un operario.');
@@ -155,9 +165,14 @@ export function CrearPlanView() {
       </section>
 
       <section>
-        <h2 className="text-sm font-semibold mb-2">
-          Estado inicial de tanques <span className="text-xs font-normal text-muted-foreground">(toca para cambiar)</span>
-        </h2>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-sm font-semibold">
+            Estado inicial de tanques <span className="text-xs font-normal text-muted-foreground">(toca para cambiar)</span>
+          </h2>
+          <span className="text-xs font-mono text-muted-foreground">
+            {tanquesDisponibles.length} disponible(s) para paralelizar
+          </span>
+        </div>
         <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
           {tanques.map((t) => {
             const st = tanqueEstilo(t.estado);
@@ -232,6 +247,16 @@ export function CrearPlanView() {
           </div>
         </div>
       </section>
+
+      {avisos.length > 0 && (
+        <div className="space-y-2">
+          {avisos.map((a) => (
+            <AlertaItem key={a} nivel="info">
+              {a}
+            </AlertaItem>
+          ))}
+        </div>
+      )}
 
       {errores.length > 0 && (
         <div className="space-y-2">

@@ -10,4 +10,5 @@ alwaysApply: true
 - Dominio en `lib/domain/`; vistas en `components/views/`; rutas en `app/`.
 - UI en español; copy **"Plan del día"** (no "Jornada" en interfaz).
 - Cambios mínimos y enfocados; `npm test` + `npm run build` antes de cerrar.
+- **Al terminar trabajo con cambios:** commit + `git push origin main` (deploy automático). Ver `AGENTS.md` → Git.
 - Docs: `AGENTS.md`, `GUIA-OPERACION.md`, `docs/DEPLOY.md`.

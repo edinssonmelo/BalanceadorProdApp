@@ -13,6 +13,7 @@
 - [x] Fix solapamiento operario en motor (commit incremental)
 - [x] Tests Vitest `engine.test.ts`
 - [x] AGENTS.md + `.cursor/rules` + `.cursor/skills`
+- [x] Deploy automático GitHub Actions → ai-server (self-hosted runner)
 
 ## Pendiente (post-demo)
 - [ ] Base de datos y auth

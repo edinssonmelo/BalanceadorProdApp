@@ -61,7 +61,7 @@ jobs:
   deploy-self-hosted:
     name: Deploy (self-hosted ai-server)
     needs: ci
-    runs-on: self-hosted
+    runs-on: [self-hosted, balanceador]
     if: vars.DEPLOY_SELF_HOSTED == 'true' && vars.DEPLOY_VIA_SSH != 'true'
     steps:
       - name: Pull + Docker rebuild

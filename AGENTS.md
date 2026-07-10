@@ -37,8 +37,17 @@ Each `Jornada` stores `proceso` and `operariosSnapshot` at creation. Global conf
 - [ ] Manual scenario: 2 ops, 6 tanques, meta 5 — no operator overlap violations.
 - [ ] Update `memory-bank/` if behavior or architecture changes.
 
+## Git — commit y push automático
+Tras cambios de código o docs **listos para producción** en una tarea:
+1. `npm test` y `npm run build` (si tocaste lógica o build).
+2. Commit en `main` con mensaje claro (1–2 frases, el porqué).
+3. **Push a `origin/main`** — el pipeline despliega solo en ai-server.
+4. No incluir secretos (`.env`, claves SSH privadas).
+
+**No** commitear/pushear si: el usuario pidió explícitamente no hacerlo, la tarea fue solo pregunta/revisión, o los checks fallan sin arreglo claro.
+
 ## Out of scope unless explicitly requested
-Auth, DB, empaque module, global optimizer, committing without user ask.
+Auth, DB, empaque module, global optimizer.
 
 ## Agent assets in this repo
 - `.cursor/rules/` — always-on and file-scoped guardrails.

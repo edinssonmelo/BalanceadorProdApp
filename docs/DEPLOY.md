@@ -44,12 +44,24 @@ Cada push/PR a `main` ejecuta `npm ci` + `npm run build`.
 | `DEPLOY_SELF_HOSTED` | `true` | Runner en ai-server (recomendado) |
 | `DEPLOY_VIA_SSH` | `true` | SSH desde GitHub (host público o túnel) |
 
-**Self-hosted (recomendado):**
+**Self-hosted (recomendado — ya configurado en ai-server):**
 
-1. En GitHub → repo → Settings → Actions → Runners → New self-hosted
-2. En ai-server, registrar runner para **este repo** (no solo infra)
-3. Activar variable `DEPLOY_SELF_HOSTED=true`
-4. Push a `main` → build + deploy automático
+1. Variable de repo: `DEPLOY_SELF_HOSTED=true` (Settings → Actions → Variables)
+2. Runner: `ai-server-balanceador` en `/srv/actions-runner/balanceador-prod-app`
+3. Servicio systemd: `actions.runner.edinssonmelo-BalanceadorProdApp.ai-server-balanceador.service`
+4. Push a `main` → CI en GitHub + deploy en el runner del servidor
+
+**Registrar runner de nuevo** (solo si se reinstala el servidor):
+
+```bash
+# En tu máquina: token de un solo uso (~1 h)
+gh api --method POST repos/edinssonmelo/BalanceadorProdApp/actions/runners/registration-token --jq .token
+
+# En ai-server (como edsun):
+TOKEN=<pegar> bash /srv/apps/balanceador-demo/scripts/github-actions-runner-setup.sh
+```
+
+O copiar `scripts/github-actions-runner-setup.sh` del repo y ejecutarlo con `TOKEN`.
 
 **SSH alternativo:**
 

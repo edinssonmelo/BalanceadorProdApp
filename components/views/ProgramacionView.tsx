@@ -17,6 +17,7 @@ export function ProgramacionView() {
   const parametros = useStore((s) => s.parametros);
   const aprobarJornada = useStore((s) => s.aprobarJornada);
   const eliminarJornada = useStore((s) => s.eliminarJornada);
+  const recalcularJornada = useStore((s) => s.recalcularJornada);
 
   if (!jornada || !jornada.resultado) {
     return (
@@ -33,6 +34,8 @@ export function ProgramacionView() {
   const numOps = jornada.operariosIds.length;
   const comp2 = compararOperarios(jornada, parametros, 2);
   const comp3 = compararOperarios(jornada, parametros, 3);
+  const planDesactualizado =
+    Math.abs(res.finEstimadoMin - comp2.finMin) > 5 || res.tanquesPlaneados !== comp2.tanques;
 
   const aprobar = () => {
     aprobarJornada(jornada.id);
@@ -53,16 +56,29 @@ export function ProgramacionView() {
         subtitulo={`${jornada.turno} · ${jornada.horaInicio}–${jornada.horaFin}`}
         back={`/plan/${id}`}
         right={
-          <button type="button" className="btn btn-ghost !py-2 !px-3 text-xs" onClick={descartar}>
-            Descartar
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              className="btn btn-ghost !py-2 !px-3 text-xs"
+              onClick={() => recalcularJornada(jornada.id)}
+            >
+              Recalcular
+            </button>
+            <button type="button" className="btn btn-ghost !py-2 !px-3 text-xs" onClick={descartar}>
+              Descartar
+            </button>
+          </div>
         }
       />
       <PlanTabs id={id} />
       <PasoFlujo pasos={['Crear', 'Revisar', 'Aprobar', 'Ejecutar', 'Cerrar']} actual={1} />
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <StatCard label="Tanques posibles" value={res.tanquesPlaneados} sub={`Meta: ${jornada.metaTanques}`} />
+        <StatCard
+          label="Lotes programados"
+          value={res.tanquesPlaneados}
+          sub={`Meta: ${jornada.metaTanques} lotes`}
+        />
         <StatCard label="Hora fin estimada" value={finClock} />
         <StatCard label="Operarios" value={numOps} />
         <StatCard label="Galones planeados" value={res.galonesPlaneados} />
@@ -77,6 +93,14 @@ export function ProgramacionView() {
           tone={res.metaAlcanzable ? 'success' : 'warning'}
         />
       </div>
+
+      {planDesactualizado && (
+        <AlertaItem nivel="advertencia" titulo="Plan desactualizado">
+          La comparación rápida no coincide con esta programación guardada. Pulsa <strong>Recalcular</strong> o
+          crea un plan nuevo para aplicar el motor actual ({comp2.tanques} lotes · fin{' '}
+          {offsetToClock(base, comp2.finMin)} con {Math.min(2, numOps)} operarios).
+        </AlertaItem>
+      )}
 
       {res.cuelloDeBotella && (
         <AlertaItem nivel="info" titulo="Cuello de botella">
@@ -131,8 +155,12 @@ export function ProgramacionView() {
       <TimelineResumen tareas={res.tareas} proceso={jornada.proceso} baseInicioMin={base} />
 
       <section>
-        <h2 className="text-sm font-semibold mb-2">Tanques usados</h2>
+        <h2 className="text-sm font-semibold mb-2">Tanques físicos usados</h2>
         <p className="text-sm text-muted-foreground font-mono">{res.tanquesUsados.join(', ') || '—'}</p>
+        <p className="text-xs text-muted-foreground mt-1">
+          {jornada.tanquesIds.length} tanque(s) disponible(s) al crear el plan. Cada lote puede reutilizar un tanque
+          cuando termina el ciclo anterior.
+        </p>
       </section>
 
       <button className="btn btn-success btn-lg w-full" onClick={aprobar}>
