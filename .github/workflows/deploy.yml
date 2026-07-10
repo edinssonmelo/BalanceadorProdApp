@@ -22,7 +22,7 @@ concurrency:
 
 jobs:
   ci:
-    name: Build (gate)
+    name: Tests (gate)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -32,9 +32,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
-      - run: npm run build
-        env:
-          NEXT_TELEMETRY_DISABLED: 1
+      # El build de producción ocurre una sola vez en Docker (servidor), no aquí.
 
   configure-hint:
     name: Deploy desactivado
@@ -64,14 +62,14 @@ jobs:
     runs-on: [self-hosted, balanceador]
     if: vars.DEPLOY_SELF_HOSTED == 'true' && vars.DEPLOY_VIA_SSH != 'true'
     steps:
-      - name: Pull + Docker rebuild
+      - name: Pull + Docker rebuild (cached)
+        env:
+          DOCKER_BUILDKIT: '1'
+          COMPOSE_DOCKER_CLI_BUILD: '1'
         run: |
           set -euo pipefail
           APP_DIR="${APP_DIR:-/srv/apps/balanceador-demo}"
           cd "$APP_DIR"
-          git fetch origin "${{ github.ref_name }}"
-          git checkout "${{ github.ref_name }}"
-          git reset --hard "origin/${{ github.ref_name }}"
           chmod +x scripts/deploy.sh
           APP_DIR="$APP_DIR" BRANCH="${{ github.ref_name }}" ./scripts/deploy.sh
 
@@ -91,10 +89,9 @@ jobs:
           command_timeout: 25m
           script: |
             set -euo pipefail
+            export DOCKER_BUILDKIT=1
+            export COMPOSE_DOCKER_CLI_BUILD=1
             APP_DIR="${APP_DIR:-/srv/apps/balanceador-demo}"
             cd "$APP_DIR"
-            git fetch origin "${{ github.ref_name }}"
-            git checkout "${{ github.ref_name }}"
-            git reset --hard "origin/${{ github.ref_name }}"
             chmod +x scripts/deploy.sh
             APP_DIR="$APP_DIR" BRANCH="${{ github.ref_name }}" ./scripts/deploy.sh

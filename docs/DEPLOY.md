@@ -29,15 +29,35 @@ chmod +x scripts/deploy.sh
 ./scripts/deploy.sh
 ```
 
-El script hace `git reset --hard`, rebuild sin caché y `--force-recreate` del contenedor.
+El script hace `git reset --hard`, build Docker con **caché BuildKit** (capas + `.next/cache`) y `up -d`.
+
+Rebuild completo forzado: `NO_CACHE=1 ./scripts/deploy.sh`
 
 ## CI/CD con GitHub Actions
 
-### 1. CI (automático)
+### Flujo en push a `main` (optimizado)
 
-Cada push/PR a `main` ejecuta `npm ci` + `npm run build`.
+| Paso | Dónde | Qué hace | ~Tiempo |
+|------|-------|----------|---------|
+| 1. Tests (gate) | GitHub cloud | `npm ci` + `npm test` | ~30–45 s |
+| 2. Deploy | Runner ai-server | `git pull` + Docker build con caché + restart | ~1–3 min |
 
-### 2. Deploy (elegir un modo)
+**Antes:** CI duplicado en cloud (~1 min) + gate con build (~1 min) + Docker `--no-cache` (~3–5 min) → **~5–8 min**.
+
+**Ahora:** un gate ligero + un solo build en servidor con caché → **~2–4 min** típico.
+
+En **pull requests** sigue corriendo CI completo (`npm test` + `npm run build`) sin desplegar.
+
+### Alternativas (si necesitas más velocidad)
+
+| Modo | Tiempo | Trade-off |
+|------|--------|-----------|
+| **Actual (recomendado)** | ~2–4 min | Gate de tests en cloud + build Docker en servidor con caché |
+| **Solo self-hosted** | ~1–3 min | Quitar gate cloud; tests solo en servidor antes del build (`DEPLOY_GATE=skip`) |
+| **Imagen preconstruida (GHCR)** | ~30–60 s en servidor | Build en GitHub, `docker pull` en ai-server; más infra (registry, secrets) |
+| **Rebuild completo** | +2–4 min | `NO_CACHE=1 ./scripts/deploy.sh` si sospechas caché corrupta |
+
+### Deploy (elegir un modo)
 
 | Variable | Valor | Uso |
 |----------|-------|-----|
@@ -76,9 +96,10 @@ Next.js genera hashes nuevos en cada build (`/_next/static/css/XXXX.css`). Si el
 
 - `output: 'standalone'` en `next.config.ts` (Docker copia `.next/static`)
 - Headers `Cache-Control: no-store` en páginas HTML
-- Deploy con `--force-recreate` y rebuild completo
+- `docker compose up -d` recrea el contenedor si la imagen cambió
 
-Si persiste en el navegador: recarga forzada (Ctrl+Shift+R) o limpiar caché del sitio.
+Si persiste en el navegador: recarga forzada (Ctrl+Shift+R) o limpiar caché del sitio.  
+Si el CSS sigue roto tras deploy: `NO_CACHE=1 ./scripts/deploy.sh`.
 
 ## Verificación post-deploy
 

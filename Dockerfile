@@ -3,7 +3,8 @@
 FROM node:20-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci
 
 FROM node:20-alpine AS build
 WORKDIR /app
@@ -11,7 +12,8 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN mkdir -p public
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN npm run build
+RUN --mount=type=cache,target=/app/.next/cache \
+    npm run build
 
 FROM node:20-alpine AS runner
 WORKDIR /app
