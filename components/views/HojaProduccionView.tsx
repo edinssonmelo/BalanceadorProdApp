@@ -7,15 +7,19 @@ import { PlanTabs } from '@/components/PlanTabs';
 import { EmptyState } from '@/components/ui';
 import {
   baseInicioJornada,
-  filasHorariasDesdeTareas,
+  grillaDistribucionExcel,
   resumenPorTanque,
 } from '@/lib/domain/hoja';
+import { PARAMETROS_INICIALES } from '@/lib/domain/defaults';
+import { useState } from 'react';
 
 export function HojaProduccionView() {
   const params = useParams();
   const id = params.id as string;
   const jornada = useStore((s) => s.jornadas.find((j) => j.id === id));
   const aprobarJornada = useStore((s) => s.aprobarJornada);
+  const parametros = useStore((s) => s.parametros);
+  const [exportando, setExportando] = useState(false);
 
   if (!jornada?.resultado) {
     return (
@@ -28,7 +32,8 @@ export function HojaProduccionView() {
 
   const base = baseInicioJornada(jornada);
   const res = jornada.resultado;
-  const filas = filasHorariasDesdeTareas(res.tareas, base);
+  const pausas = parametros.pausas ?? PARAMETROS_INICIALES.pausas;
+  const grilla = grillaDistribucionExcel(res.tareas, base, pausas);
   const resumen = resumenPorTanque(res.tareas, base);
   const operarios = jornada.operariosSnapshot
     .filter((o) => jornada.operariosIds.includes(o.id))
@@ -39,14 +44,38 @@ export function HojaProduccionView() {
     if (jornada.estado === 'borrador') aprobarJornada(jornada.id);
   };
 
+  const descargarExcel = async () => {
+    setExportando(true);
+    try {
+      usarPlan();
+      const { descargarDistribucionExcel } = await import('@/lib/domain/hoja-excel');
+      await descargarDistribucionExcel({
+        jornada,
+        resultado: res,
+        pausas,
+        operariosLabel: operarios,
+      });
+    } finally {
+      setExportando(false);
+    }
+  };
+
   return (
     <div className="space-y-4 print:space-y-2">
       <div className="print:hidden">
         <PageHeader titulo="Hoja de producción" subtitulo="Imprimible para piso" back={`/plan/${id}/programacion`} />
         <PlanTabs id={id} />
-        <div className="flex gap-2 mb-4">
+        <div className="flex flex-wrap gap-2 mb-4">
           <button type="button" className="btn btn-primary" onClick={() => { usarPlan(); window.print(); }}>
             Imprimir hoja
+          </button>
+          <button
+            type="button"
+            className="btn btn-success"
+            disabled={exportando}
+            onClick={descargarExcel}
+          >
+            {exportando ? 'Generando Excel…' : 'Descargar Excel'}
           </button>
           {jornada.estado === 'borrador' && (
             <button type="button" className="btn btn-ghost" onClick={usarPlan}>
@@ -62,8 +91,10 @@ export function HojaProduccionView() {
             <div className="h-12 w-32 border border-dashed border-black/30 flex items-center justify-center text-xs text-black/50 mb-2">
               Logo empresa
             </div>
-            <h1 className="text-lg font-bold">Plan del día — Producción</h1>
-            <p className="text-sm">
+            <h1 className="text-base font-bold uppercase tracking-tight">
+              Distribución de proceso en la jornada laboral
+            </h1>
+            <p className="text-sm mt-1">
               {jornada.fecha} · {jornada.turno} · {jornada.horaInicio}–{jornada.horaFin}
             </p>
           </div>
@@ -80,27 +111,97 @@ export function HojaProduccionView() {
           </div>
         </header>
 
-        <section className="mb-6">
-          <h2 className="text-sm font-bold uppercase tracking-wide mb-2">Programación por hora</h2>
-          <table className="w-full text-sm border-collapse">
+        <section className="mb-6 overflow-x-auto">
+          <table className="hoja-grid w-full text-[10px] border-collapse min-w-[640px]">
             <thead>
-              <tr className="border-b border-black/30">
-                <th className="text-left py-1 pr-4 w-20 font-semibold">Hora</th>
-                <th className="text-left py-1 font-semibold">Actividades programadas</th>
+              <tr className="border border-black/40">
+                <th className="border border-black/40 px-1 py-1 w-14 font-bold bg-white">HORA</th>
+                <th
+                  colSpan={grilla.columnas.length || 1}
+                  className="border border-black/40 px-1 py-1 font-bold text-center bg-white"
+                >
+                  PRODUCCIÓN
+                </th>
               </tr>
+              {grilla.columnas.length > 0 && (
+                <tr className="border border-black/40">
+                  <th className="border border-black/40 bg-white" />
+                  {grilla.columnas.map((col) => (
+                    <th
+                      key={col.tanqueId}
+                      className="border border-black/40 px-1 py-0.5 font-semibold text-center"
+                      style={{ backgroundColor: col.color }}
+                    >
+                      {col.tanqueId}
+                    </th>
+                  ))}
+                </tr>
+              )}
             </thead>
             <tbody>
-              {filas.map((f) => (
-                <tr key={f.horaOffsetMin} className="border-b border-black/10 align-top">
-                  <td className="py-1.5 pr-4 font-mono whitespace-nowrap">{f.horaLabel}</td>
-                  <td className="py-1.5">{f.actividades.join(' · ')}</td>
-                </tr>
-              ))}
+              {grilla.filas.map((fila) => {
+                if (fila.pausaNombre) {
+                  return (
+                    <tr key={fila.horaOffsetMin} className="hoja-pausa">
+                      <td className="border border-black/40 px-1 py-0.5 font-mono whitespace-nowrap align-middle">
+                        {fila.horaLabel}
+                      </td>
+                      <td
+                        colSpan={grilla.columnas.length || 1}
+                        className="border border-black/40 px-2 py-1 text-center font-bold text-white uppercase"
+                      >
+                        {fila.pausaNombre}
+                      </td>
+                    </tr>
+                  );
+                }
+
+                if (fila.horaOffsetMin === 0) {
+                  const texto = grilla.columnas[0]
+                    ? fila.celdas[grilla.columnas[0].tanqueId]?.texto
+                    : '';
+                  return (
+                    <tr key={fila.horaOffsetMin}>
+                      <td className="border border-black/40 px-1 py-0.5 font-mono whitespace-nowrap bg-white">
+                        {fila.horaLabel}
+                      </td>
+                      <td
+                        colSpan={grilla.columnas.length || 1}
+                        className="border border-black/40 px-1 py-0.5 font-semibold"
+                      >
+                        {texto}
+                      </td>
+                    </tr>
+                  );
+                }
+
+                return (
+                  <tr key={fila.horaOffsetMin}>
+                    <td className="border border-black/40 px-1 py-0.5 font-mono whitespace-nowrap align-top bg-white">
+                      {fila.horaLabel}
+                    </td>
+                    {grilla.columnas.map((col) => {
+                      const celda = fila.celdas[col.tanqueId] ?? {};
+                      return (
+                        <td
+                          key={col.tanqueId}
+                          className="border border-black/40 px-1 py-0.5 align-top leading-tight"
+                          style={{
+                            backgroundColor: celda.activo ? col.color : celda.texto ? col.color : undefined,
+                          }}
+                        >
+                          {celda.texto ?? ''}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </section>
 
-        <section className="mb-6">
+        <section className="mb-6 print:break-before-auto">
           <h2 className="text-sm font-bold uppercase tracking-wide mb-2">Resumen por tanque</h2>
           <table className="w-full text-xs border-collapse">
             <thead>
@@ -156,7 +257,7 @@ export function HojaProduccionView() {
           </section>
         )}
 
-        <footer className="mt-6 pt-4 border-t border-black/20 text-xs text-black/60">
+        <footer className="mt-6 pt-4 border-t border-black/20 text-xs text-black/60 print:hidden">
           Generado por Balanceador de Producción · {new Date().toLocaleString('es-CO')}
         </footer>
       </article>

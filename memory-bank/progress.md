@@ -12,7 +12,7 @@
 - [x] AGENTS.md + `.cursor/rules` + `.cursor/skills`
 - [x] Deploy automático GitHub Actions → ai-server
 - [x] Fix paralelismo + compararOperarios + makespan
-- [x] **MVP hoja imprimible**: montaje 2 personas, `/plan/[id]/hoja`, print CSS
+- [x] Exportación Excel (`hoja-excel.ts`, ExcelJS) con grilla tipo planta
 - [x] **Control por hora** + cierre simple (`ControlDiaView`, `cortesControl`)
 - [x] Nav reorientado (Hoja/Control principal; Registro/Operario secundario)
 - [x] 13 tests motor; `npm test` + `npm run build` OK

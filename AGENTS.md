@@ -38,14 +38,23 @@ Each `Jornada` stores `proceso` and `operariosSnapshot` at creation. Global conf
 - [ ] Manual scenario: 2 ops, 6 tanques, meta 5 — no operator overlap violations.
 - [ ] Update `memory-bank/` if behavior or architecture changes.
 
-## Git — commit y push automático
-Tras cambios de código o docs **listos para producción** en una tarea:
-1. `npm test` y `npm run build` (si tocaste lógica o build).
-2. Commit en `main` con mensaje claro (1–2 frases, el porqué).
-3. **Push a `origin/main`** — el pipeline despliega solo en ai-server.
-4. No incluir secretos (`.env`, claves SSH privadas).
+## Git — commit y push obligatorio (default)
 
-**No** commitear/pushear si: el usuario pidió explícitamente no hacerlo, la tarea fue solo pregunta/revisión, o los checks fallan sin arreglo claro.
+**Regla por defecto:** si la tarea tocó código o docs y quedó lista para producción, **siempre** commit + **push a `origin/main`** en la misma sesión. No dejar cambios solo en local salvo que el usuario lo pida explícitamente.
+
+Checklist al cerrar trabajo con cambios:
+1. `npm test` y `npm run build` (si tocaste lógica, UI con build, o dependencias).
+2. Commit en `main` con mensaje claro (1–2 frases, el porqué).
+3. **`git push origin main`** — el pipeline despliega solo en ai-server. **No terminar la tarea sin push** si el commit fue exitoso.
+4. Verificar con `git status` que no queden archivos pendientes sin commitear.
+5. No incluir secretos (`.env`, claves SSH privadas).
+
+**Excepciones** (no commit/push):
+- El usuario pidió explícitamente no hacerlo.
+- La tarea fue **solo** pregunta, revisión o análisis sin cambios en el repo.
+- Los checks fallan y no hay arreglo claro en la misma sesión (dejar indicado qué falta).
+
+Si el usuario dice que **siempre** suba los cambios, trátalo como confirmación del default: push sin preguntar al terminar.
 
 ## Out of scope unless explicitly requested
 Auth, DB, empaque module, global optimizer.

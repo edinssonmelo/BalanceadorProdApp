@@ -123,4 +123,15 @@
     box-shadow: none !important;
     padding: 0 !important;
   }
+
+  .hoja-grid td,
+  .hoja-grid th {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .hoja-pausa td:last-child {
+    background: #595959 !important;
+    color: white !important;
+  }
 }

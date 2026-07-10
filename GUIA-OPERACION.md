@@ -158,6 +158,7 @@ En **Hoja** (o desde Programación → Generar hoja):
 - **Tabla por hora** con todas las actividades concurrentes en planta.
 - Resumen por tanque e instrucciones de producto.
 - Botón **Imprimir** (o Guardar PDF desde el diálogo del navegador).
+- Botón **Descargar Excel** — archivo `.xlsx` con grilla por tanque, colores y hoja de resumen (mismo formato que el Excel de planta).
 
 Entrega esta hoja al piso. Es el entregable principal del día.
 
