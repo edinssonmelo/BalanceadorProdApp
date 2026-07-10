@@ -18,7 +18,7 @@ MVP **planificar → imprimir → controlar** según validación del cliente.
 
 ## Hecho en esta iteración
 - `lib/domain/hoja.ts` + `HojaProduccionView` + print CSS.
-- **`lib/domain/hoja-excel.ts`** — exportación `.xlsx` (ExcelJS): grilla, colores, fusiones, pausa, hoja Resumen.
+- Logo Kolorflex en `public/kolorflex-logo.png`; Excel y hoja usan colores K (#001088) y F (#F03038).
 - `ControlDiaView` + `cortesControl` / `tanquesReales` en store.
 - Nav: AppShell/PlanTabs → Hoja + Control; CTAs reorientados.
 - Docs: GUIA-OPERACION, AGENTS, memory-bank.
