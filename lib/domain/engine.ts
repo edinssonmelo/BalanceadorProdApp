@@ -111,9 +111,12 @@ function elegirOperario(
   const sinSobrecarga = candidates.filter((c) => !c.sobrecarga);
   const pool = sinSobrecarga.length > 0 ? sinSobrecarga : candidates;
 
+  // Makespan: quien puede empezar antes; a igualdad, quien termina antes (más eficiente);
+  // luego balance de carga.
   pool.sort((a, b) => {
-    if (a.cargaActual !== b.cargaActual) return a.cargaActual - b.cargaActual;
-    return a.inicio - b.inicio;
+    if (a.inicio !== b.inicio) return a.inicio - b.inicio;
+    if (a.fin !== b.fin) return a.fin - b.fin;
+    return a.cargaActual - b.cargaActual;
   });
 
   const best = pool[0];
@@ -357,7 +360,14 @@ export function programar(input: EngineInput): ResultadoProgramacion {
       continue;
     }
 
-    candidatos.sort((a, b) => a.inicio - b.inicio || a.lote.loteIndex - b.lote.loteIndex);
+    // Primero el que puede empezar antes; a igualdad, avanzar lotes ya en curso
+    // (mayor opIndex) antes de abrir lotes nuevos — libera tanques y operarios antes.
+    candidatos.sort(
+      (a, b) =>
+        a.inicio - b.inicio ||
+        b.lote.opIndex - a.lote.opIndex ||
+        a.lote.loteIndex - b.lote.loteIndex,
+    );
     const cand = candidatos[0];
     const { lote, op } = cand;
 
@@ -531,7 +541,11 @@ export function programarJornada(jornada: Jornada, parametros: Parametros): Resu
   });
 }
 
-/** Comparación rápida N operarios vs plan actual */
+/**
+ * Comparación rápida con N operarios.
+ * Usa el snapshot completo (activos), priorizando los del plan actual,
+ * para que "con 3" no quede igual a "con 2" solo porque el plan eligió 2.
+ */
 export function compararOperarios(
   jornada: Jornada,
   parametros: Parametros,
@@ -541,8 +555,14 @@ export function compararOperarios(
   const fin = hhmmToMinutes(jornada.horaFin);
   const horizonMin = Math.max(0, fin - inicio);
   const tanquesFisicos = jornada.tanquesIds.filter((t) => !jornada.tanquesBloqueadosIds.includes(t));
-  const todos = jornada.operariosSnapshot.filter((o) => jornada.operariosIds.includes(o.id));
-  const operarios = todos.slice(0, cantidad);
+
+  const seleccionados = jornada.operariosSnapshot.filter(
+    (o) => o.activo && jornada.operariosIds.includes(o.id),
+  );
+  const extras = jornada.operariosSnapshot.filter(
+    (o) => o.activo && !jornada.operariosIds.includes(o.id),
+  );
+  const operarios = [...seleccionados, ...extras].slice(0, cantidad);
 
   const res = programar({
     horizonMin,

@@ -48,7 +48,9 @@ Solo los tanques **disponibles** entran al cálculo del plan.
 ### Operarios
 Personas que ejecutan las operaciones. Cada uno tiene:
 
-- **Eficiencia (%)** — si es menor a 100 %, el sistema asume que tarda más.
+- **Eficiencia (%)** — si es menor a 100 %, el sistema asume que tarda más (ej. 85 % → un pesaje de 5 min pasa a 6 min).  
+  Con eficiencia distinta entre operarios, **los montajes paralelos no arrancan al mismo minuto**.  
+  Para planificar como en Excel (tiempos estándar), deja a todos en **100 %**.
 - **Carga máxima (%)** — límite de ocupación que el motor respeta al programar.
 - **Rol** — operario o auxiliar.
 

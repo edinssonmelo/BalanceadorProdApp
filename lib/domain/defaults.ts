@@ -13,10 +13,12 @@ export const genId = (prefix = 'id'): string => {
   return `${prefix}_${Date.now().toString(36)}_${seq.toString(36)}`;
 };
 
+/** Eficiencia 100% = tiempos estándar del proceso (como Excel de planta).
+ *  Bajarla alarga cada tarea de ese operario y rompe el arranque simétrico. */
 export const OPERARIOS_INICIALES: Operario[] = [
   { id: 'op_juan', nombre: 'Juan', rol: 'operario', eficiencia: 100, cargaMaxima: 95, activo: true },
-  { id: 'op_camilo', nombre: 'Camilo', rol: 'auxiliar', eficiencia: 85, cargaMaxima: 90, activo: true },
-  { id: 'op_pedro', nombre: 'Pedro', rol: 'operario', eficiencia: 70, cargaMaxima: 90, activo: true },
+  { id: 'op_camilo', nombre: 'Camilo', rol: 'auxiliar', eficiencia: 100, cargaMaxima: 90, activo: true },
+  { id: 'op_pedro', nombre: 'Pedro', rol: 'operario', eficiencia: 100, cargaMaxima: 90, activo: true },
 ];
 
 export const TANQUES_INICIALES: Tanque[] = [

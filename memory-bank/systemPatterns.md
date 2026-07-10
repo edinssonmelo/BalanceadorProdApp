@@ -30,9 +30,11 @@ flowchart TB
 ## Motor (`lib/domain/engine.ts`)
 - Scheduler por eventos: **un candidato por iteración**; actualiza `opFreeAt`/`tankFreeAt` antes del siguiente.
 - **Invariante:** un operario no tiene dos tareas manuales solapadas. Paralelismo solo con operarios/tanques distintos libres.
-- Operario por menor carga; respeta carga máxima y pausas.
-- Esperas pasivas (`tipo: pasivo`) bloquean tanque, no operario.
-- `compararOperarios()` para escenarios 2 vs 3 ops.
+- Operario: earliest start → earliest finish (eficiencia) → menor carga.
+- Prioridad de lote: a igual inicio, avanzar lotes ya en curso antes de abrir nuevos.
+- Esperas pasivas (`tipo: pasivo`) bloquean tanque, no operario (operarios pueden pesar/montar otros).
+- `compararOperarios(N)` usa snapshot completo (no solo los del plan).
+- Defaults: eficiencia 100% (tiempos estándar). Bajarla alarga tareas y desfasá arranques paralelos.
 - Tests: `lib/domain/engine.test.ts` (`npm test`).
 
 ## Agent guardrails

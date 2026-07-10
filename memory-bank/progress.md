@@ -14,6 +14,7 @@
 - [x] Tests Vitest `engine.test.ts`
 - [x] AGENTS.md + `.cursor/rules` + `.cursor/skills`
 - [x] Deploy automático GitHub Actions → ai-server (self-hosted runner)
+- [x] Fix paralelismo (eficiencia 100%, compararOperarios, makespan) + 12 tests
 
 ## Pendiente (post-demo)
 - [ ] Base de datos y auth
