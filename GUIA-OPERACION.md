@@ -55,19 +55,18 @@ Personas que ejecutan las operaciones. Cada uno tiene:
 - **Carga máxima (%)** — límite de ocupación que el motor respeta al programar.
 - **Rol** — operario o auxiliar.
 
-### Proceso estándar (8 pasos por lote)
+### Proceso estándar (7 pasos por lote)
 Cada tanque que se programa sigue esta secuencia:
 
 1. Pesaje  
 2. Montaje del tanque  
-3. Primera celulosa  
-4. **Espera 1** (30 min — el tanque espera, el operario puede hacer otra cosa)  
-5. Segunda celulosa  
-6. **Espera 2** (30 min — igual que la anterior)  
-7. Resina  
-8. Finalización  
+3. Primera celulosa (5 min, un operario)  
+4. Segunda celulosa (5 min, el mismo operario inmediatamente después)  
+5. **Revólver** (30 min — el tanque espera, el operario puede hacer otra cosa)  
+6. Resina  
+7. Finalización  
 
-Las **esperas de 30 minutos son obligatorias** y no se pueden acortar desde configuración.
+El **revólver de 30 minutos** empieza al terminar de agregar la segunda celulosa; es obligatorio y no se puede acortar desde configuración.
 
 ### Productos / colores
 Al crear el plan defines qué se va a fabricar. Cada producto puede llevar una **instrucción visible** para el operario (ej.: "Agregar 2.5 kg azul").  

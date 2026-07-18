@@ -23,7 +23,8 @@ Each `Jornada` stores `proceso` and `operariosSnapshot` at creation. Global conf
 |------|--------|
 | One manual op per operator | A single operator cannot have overlapping manual tasks. Commit one candidate per loop iteration. |
 | Parallel lots | Allowed only when distinct operators/tanks are free. |
-| Passive ops | `tipo: 'pasivo'` blocks **tank**, not operator (`espera1`/`espera2`, 30 min, non-editable in UI). |
+| Passive ops | `tipo: 'pasivo'` blocks **tank**, not operator (`espera2` = revólver de 30 min, non-editable in UI). |
+| Celulosa | Un operario agrega `celulosa1` y, al terminar sus 5 min, `celulosa2` durante 5 min consecutivos. El revólver empieza después de `celulosa2`; luego se agrega resina. |
 | Pausas | Block **operator** via `ajustarVentanaPorPausas`; absolute `HH:mm`, not offset. |
 | Operator pick | Prefer under `cargaMaxima`; else least loaded, then earliest start. |
 | Special op ids | `pesaje`, `montaje` have dedicated branches — do not rename without updating engine. |

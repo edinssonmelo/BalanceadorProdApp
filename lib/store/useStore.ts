@@ -150,8 +150,24 @@ function migrarJornada(j: Jornada): Jornada {
   return {
     ...j,
     productos: normalizarProductos(j.productos as ProductoPlan[] | string[]),
+    proceso: normalizarProcesoCelulosa(j.proceso),
     simClockMin: j.simClockMin ?? 0,
   };
+}
+
+/**
+ * Migra el flujo antiguo (celulosa 1 → espera → celulosa 2 → espera) al flujo
+ * operativo: celulosa 1 → celulosa 2 → revólver 30 min → resina.
+ */
+function normalizarProcesoCelulosa(proceso: OperacionEstandar[]): OperacionEstandar[] {
+  return proceso
+    .filter((op) => op.id !== 'espera1')
+    .sort((a, b) => a.orden - b.orden)
+    .map((op, index) => ({
+      ...op,
+      ...(op.id === 'espera2' ? { nombre: 'Revólver (espera 30 min)' } : {}),
+      orden: index + 1,
+    }));
 }
 
 export const PERSIST_KEY = 'balanceador-produccion-v2';
@@ -405,15 +421,24 @@ export const useStore = create<AppState>()(
       name: PERSIST_KEY,
       merge: (persisted, current) => {
         const p = persisted as Partial<AppState>;
+        const parametros = {
+          ...PARAMETROS_INICIALES,
+          ...p.parametros,
+          pausas: p.parametros?.pausas ?? PAUSAS_INICIALES,
+        };
+        const jornadas = (p.jornadas ?? []).map((j) => {
+          const requiereMigracion = j.proceso.some((op) => op.id === 'espera1');
+          const migrada = migrarJornada(j);
+          return requiereMigracion && migrada.estado === 'borrador'
+            ? { ...migrada, resultado: programarJornada(migrada, parametros) }
+            : migrada;
+        });
         return {
           ...current,
           ...p,
-          parametros: {
-            ...PARAMETROS_INICIALES,
-            ...p.parametros,
-            pausas: p.parametros?.pausas ?? PAUSAS_INICIALES,
-          },
-          jornadas: (p.jornadas ?? []).map(migrarJornada),
+          proceso: normalizarProcesoCelulosa(p.proceso ?? PROCESO_INICIAL),
+          parametros,
+          jornadas,
         };
       },
     },

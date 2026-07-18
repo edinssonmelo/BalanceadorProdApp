@@ -34,11 +34,10 @@ export const PROCESO_INICIAL: OperacionEstandar[] = [
   { id: 'pesaje', orden: 1, nombre: 'Pesaje', tipo: 'manual', requiereOperario: true, requiereTanque: false, duracionMin: 5 },
   { id: 'montaje', orden: 2, nombre: 'Montaje del tanque', tipo: 'manual', requiereOperario: true, requiereTanque: true, duracionMin: 20, operariosRequeridos: 2 },
   { id: 'celulosa1', orden: 3, nombre: 'Primera celulosa', tipo: 'manual', requiereOperario: true, requiereTanque: true, duracionMin: 5 },
-  { id: 'espera1', orden: 4, nombre: 'Espera 1', tipo: 'pasivo', requiereOperario: false, requiereTanque: true, duracionMin: 30 },
-  { id: 'celulosa2', orden: 5, nombre: 'Segunda celulosa', tipo: 'manual', requiereOperario: true, requiereTanque: true, duracionMin: 5 },
-  { id: 'espera2', orden: 6, nombre: 'Espera 2', tipo: 'pasivo', requiereOperario: false, requiereTanque: true, duracionMin: 30 },
-  { id: 'resina', orden: 7, nombre: 'Resina', tipo: 'manual', requiereOperario: true, requiereTanque: true, duracionMin: 5 },
-  { id: 'finalizacion', orden: 8, nombre: 'Finalización', tipo: 'cierre', requiereOperario: true, requiereTanque: true, duracionMin: 5 },
+  { id: 'celulosa2', orden: 4, nombre: 'Segunda celulosa', tipo: 'manual', requiereOperario: true, requiereTanque: true, duracionMin: 5 },
+  { id: 'espera2', orden: 5, nombre: 'Revólver (espera 30 min)', tipo: 'pasivo', requiereOperario: false, requiereTanque: true, duracionMin: 30 },
+  { id: 'resina', orden: 6, nombre: 'Resina', tipo: 'manual', requiereOperario: true, requiereTanque: true, duracionMin: 5 },
+  { id: 'finalizacion', orden: 7, nombre: 'Finalización', tipo: 'cierre', requiereOperario: true, requiereTanque: true, duracionMin: 5 },
 ];
 
 export const MOTIVOS_INICIALES: MotivoRetraso[] = [

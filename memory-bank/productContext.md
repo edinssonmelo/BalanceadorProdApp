@@ -10,8 +10,8 @@ La planta programa manualmente en Excel; difícil balancear operarios, tanques y
 - Comparación 2 vs 3 operarios al planificar.
 - Registro tarea-a-tarea y vista operario: secundario (sin tablet en piso hoy).
 
-## Proceso estándar (8 pasos)
-Pesaje → Montaje → Celulosa 1 → Espera 30 → Celulosa 2 → Espera 30 → Resina → Finalización.
+## Proceso estándar (7 pasos)
+Pesaje → Montaje → Celulosa 1 (5 min) → Celulosa 2 (5 min, mismo operario y consecutiva) → Revólver 30 min → Resina → Finalización.
 
 ## Copy UI
 "Plan del día" (no "Jornada" en interfaz principal).

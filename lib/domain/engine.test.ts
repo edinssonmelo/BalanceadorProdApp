@@ -100,42 +100,41 @@ describe('programar — timing celulosa (revólver 30 min)', () => {
     return res.tareas.filter((t) => t.loteIndex === 0);
   }
 
-  it('30 min exactos entre inicios de celulosa1 y celulosa2', () => {
+  it('un operario agrega celulosa2 inmediatamente después de celulosa1', () => {
     const res = programar(baseInput(OPERARIOS_INICIALES.slice(0, 2), 5));
     const c1 = tareasLote0(res).find((t) => t.operacionId === 'celulosa1');
     const c2 = tareasLote0(res).find((t) => t.operacionId === 'celulosa2');
     expect(c1).toBeTruthy();
     expect(c2).toBeTruthy();
-    expect(c2!.inicioMin - c1!.inicioMin).toBe(30);
+    expect(c2!.inicioMin).toBe(c1!.finMin);
+    expect(c2!.operarioId).toBe(c1!.operarioId);
   });
 
-  it('30 min exactos entre inicios de celulosa2 y resina', () => {
+  it('el revólver comienza al terminar celulosa2 y dura 30 min', () => {
     const res = programar(baseInput(OPERARIOS_INICIALES.slice(0, 2), 5));
     const c2 = tareasLote0(res).find((t) => t.operacionId === 'celulosa2');
+    const revolver = tareasLote0(res).find((t) => t.operacionId === 'espera2');
     const resina = tareasLote0(res).find((t) => t.operacionId === 'resina');
     expect(c2).toBeTruthy();
+    expect(revolver).toBeTruthy();
     expect(resina).toBeTruthy();
-    expect(resina!.inicioMin - c2!.inicioMin).toBe(30);
+    expect(revolver!.inicioMin).toBe(c2!.finMin);
+    expect(revolver!.finMin - revolver!.inicioMin).toBe(30);
+    expect(resina!.inicioMin).toBe(revolver!.finMin);
   });
 
-  it('espera1 anclada al inicio de celulosa1 (revólver desde la adición)', () => {
+  it('no programa una espera entre las dos adiciones de celulosa', () => {
     const res = programar(baseInput(OPERARIOS_INICIALES.slice(0, 2), 5));
-    const c1 = tareasLote0(res).find((t) => t.operacionId === 'celulosa1');
-    const e1 = tareasLote0(res).find((t) => t.operacionId === 'espera1');
-    expect(c1).toBeTruthy();
-    expect(e1).toBeTruthy();
-    expect(e1!.inicioMin).toBe(c1!.inicioMin);
-    expect(e1!.finMin - e1!.inicioMin).toBe(30);
-    expect(e1!.operarioId).toBeNull();
+    expect(tareasLote0(res).find((t) => t.operacionId === 'espera1')).toBeUndefined();
   });
 
-  it('con 2 operarios, celulosa2 no se retrasa tras espera1', () => {
+  it('con 2 operarios, resina no se retrasa tras el revólver', () => {
     const res = programar(baseInput(OPERARIOS_INICIALES.slice(0, 2), 5));
-    const c2 = tareasLote0(res).find((t) => t.operacionId === 'celulosa2');
-    const e1 = tareasLote0(res).find((t) => t.operacionId === 'espera1');
-    expect(c2).toBeTruthy();
-    expect(e1).toBeTruthy();
-    expect(c2!.inicioMin).toBeLessThanOrEqual(e1!.finMin);
+    const revolver = tareasLote0(res).find((t) => t.operacionId === 'espera2');
+    const resina = tareasLote0(res).find((t) => t.operacionId === 'resina');
+    expect(revolver).toBeTruthy();
+    expect(resina).toBeTruthy();
+    expect(resina!.inicioMin).toBe(revolver!.finMin);
     assertNoOperatorOverlap(res.tareas);
   });
 });
@@ -196,16 +195,16 @@ describe('programar — montaje en equipo', () => {
     }
   });
 
-  it('durante espera1 se puede pesar otro lote', () => {
+  it('durante el revólver se puede pesar otro lote', () => {
     const res = programar(baseInput(OPERARIOS_INICIALES.slice(0, 2), 3));
-    const espera1L1 = res.tareas.find((t) => t.loteIndex === 0 && t.operacionId === 'espera1');
-    expect(espera1L1).toBeTruthy();
+    const revolverL1 = res.tareas.find((t) => t.loteIndex === 0 && t.operacionId === 'espera2');
+    expect(revolverL1).toBeTruthy();
     const trabajoDurante = res.tareas.filter(
       (t) =>
         t.operarioId &&
         t.loteIndex > 0 &&
-        t.inicioMin >= espera1L1!.inicioMin &&
-        t.inicioMin < espera1L1!.finMin,
+        t.inicioMin >= revolverL1!.inicioMin &&
+        t.inicioMin < revolverL1!.finMin,
     );
     expect(trabajoDurante.length).toBeGreaterThan(0);
   });

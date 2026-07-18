@@ -35,8 +35,8 @@ interface LoteState {
   readyAt: number;
   tanqueId: string | null;
   completado: boolean;
-  /** Inicio de la adición manual que dispara el revólver de 30 min */
-  esperaDesde: number | null;
+  /** El mismo operario agrega ambas celulosas consecutivamente. */
+  celulosaOperarioId: string | null;
 }
 
 interface ScheduleCandidate {
@@ -316,7 +316,7 @@ export function programar(input: EngineInput): ResultadoProgramacion {
     readyAt: 0,
     tanqueId: null,
     completado: false,
-    esperaDesde: null,
+    celulosaOperarioId: null,
   }));
 
   /** Tanques con tarea manual pendiente tras espera pasiva (fin de revólver) */
@@ -352,10 +352,7 @@ export function programar(input: EngineInput): ResultadoProgramacion {
 
     if (op.tipo === 'pasivo') {
       if (!lote.tanqueId) return null;
-      const inicio =
-        lote.esperaDesde != null
-          ? lote.esperaDesde
-          : Math.max(lote.readyAt, tankFreeAt[lote.tanqueId]);
+      const inicio = Math.max(lote.readyAt, tankFreeAt[lote.tanqueId]);
       const fin = inicio + op.duracionMin;
       return {
         lote,
@@ -457,10 +454,14 @@ export function programar(input: EngineInput): ResultadoProgramacion {
     }
 
     if (!lote.tanqueId) return null;
+    const operariosParaOperacion =
+      op.id === 'celulosa2' && lote.celulosaOperarioId
+        ? operariosSel.filter((o) => o.id === lote.celulosaOperarioId)
+        : operariosSel;
     const pick = elegirOperario(
       Math.max(lote.readyAt, tankFreeAt[lote.tanqueId]),
       op.duracionMin,
-      operariosSel,
+      operariosParaOperacion,
       opFreeAt,
       opMinutes,
       horizonMin,
@@ -553,25 +554,19 @@ export function programar(input: EngineInput): ResultadoProgramacion {
     }
 
     if (lote.tanqueId && lote.tanqueId !== '—') {
-      const nextOp = opsOrdenadas[lote.opIndex + 1];
-      if (
-        (op.id === 'celulosa1' || op.id === 'celulosa2') &&
-        nextOp?.tipo === 'pasivo'
-      ) {
-        tankFreeAt[lote.tanqueId] = cand.inicio + nextOp.duracionMin;
-      } else {
-        tankFreeAt[lote.tanqueId] = cand.fin;
-      }
+      tankFreeAt[lote.tanqueId] = cand.fin;
     }
 
-    if (op.id === 'celulosa1' || op.id === 'celulosa2') {
-      lote.esperaDesde = cand.inicio;
-    }
     if (op.tipo === 'pasivo' && lote.tanqueId) {
       manualDueByTank.set(lote.tanqueId, cand.fin);
-      lote.esperaDesde = null;
     }
-    if ((op.id === 'celulosa2' || op.id === 'resina') && lote.tanqueId) {
+    if (op.id === 'celulosa1') {
+      lote.celulosaOperarioId = cand.operarioId;
+    }
+    if (op.id === 'celulosa2') {
+      lote.celulosaOperarioId = null;
+    }
+    if (op.id === 'resina' && lote.tanqueId) {
       manualDueByTank.delete(lote.tanqueId);
     }
 

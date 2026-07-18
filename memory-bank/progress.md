@@ -16,7 +16,7 @@
 - [x] **Control por hora** + cierre simple (`ControlDiaView`, `cortesControl`)
 - [x] Nav reorientado (Hoja/Control principal; Registro/Operario secundario)
 - [x] 13 tests motor; `npm test` + `npm run build` OK
-- [x] **Fix timing celulosa:** revólver 30 min anclado al inicio de adición; guard de deadlines en montajes (21 tests)
+- [x] **Fix proceso celulosa:** mismo operario agrega ambas celulosas consecutivamente (5 min c/u); revólver de 30 min posterior y guard de resina (21 tests)
 
 ## Pendiente (post-demo)
 - [ ] Base de datos y auth
