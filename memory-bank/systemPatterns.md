@@ -34,6 +34,8 @@ flowchart TB
 - Operario: earliest start → earliest finish (eficiencia) → menor carga.
 - Prioridad de lote: a igual inicio, avanzar lotes ya en curso antes de abrir nuevos.
 - Esperas pasivas (`tipo: pasivo`) bloquean tanque, no operario (operarios pueden pesar/montar otros).
+- **Revólver 30 min:** `espera1`/`espera2` se anclan al **inicio** de `celulosa1`/`celulosa2` (no al fin de la tarea de 5 min). Intervalo entre inicios de adiciones = 30 min exactos.
+- **Deadlines post-espera:** al terminar una espera pasiva, el tanque queda con deadline para la siguiente tarea manual; montajes no pueden bloquear a todos los operarios en ese instante.
 - `compararOperarios(N)` usa snapshot completo (no solo los del plan).
 - Defaults: eficiencia 100% (tiempos estándar). Bajarla alarga tareas y desfasá arranques paralelos.
 - Tests: `lib/domain/engine.test.ts` (`npm test`).

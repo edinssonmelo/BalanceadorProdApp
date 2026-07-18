@@ -35,6 +35,8 @@ interface LoteState {
   readyAt: number;
   tanqueId: string | null;
   completado: boolean;
+  /** Inicio de la adición manual que dispara el revólver de 30 min */
+  esperaDesde: number | null;
 }
 
 interface ScheduleCandidate {
@@ -57,6 +59,47 @@ function montajesSolapados(tareas: TareaProgramada[], inicio: number, fin: numbe
   return tareas.filter(
     (t) => t.operacionId === 'montaje' && t.inicioMin < fin - 0.001 && t.finMin > inicio + 0.001,
   ).length;
+}
+
+/** Operarios libres en un instante, descontando un montaje candidato */
+function operariosLibresEnDeadline(
+  deadline: number,
+  montajeInicio: number,
+  montajeFin: number,
+  montajeOpIds: string[],
+  operarios: Operario[],
+  opFreeAt: Record<string, number>,
+): number {
+  let libres = 0;
+  for (const o of operarios) {
+    const enMontaje =
+      montajeOpIds.includes(o.id) &&
+      montajeInicio < deadline + 0.001 &&
+      deadline < montajeFin - 0.001;
+    if (enMontaje) continue;
+    if ((opFreeAt[o.id] ?? 0) <= deadline + 0.001) libres++;
+  }
+  return libres;
+}
+
+function montajeRespetaDeadlines(
+  inicio: number,
+  fin: number,
+  operarioIds: string[],
+  deadlines: Map<string, number>,
+  operarios: Operario[],
+  opFreeAt: Record<string, number>,
+): boolean {
+  if (deadlines.size === 0) return true;
+  for (const deadline of deadlines.values()) {
+    if (fin <= deadline + 0.001) continue;
+    if (
+      operariosLibresEnDeadline(deadline, inicio, fin, operarioIds, operarios, opFreeAt) < 1
+    ) {
+      return false;
+    }
+  }
+  return true;
 }
 
 function duracionAjustada(base: number, eficiencia: number): number {
@@ -273,7 +316,11 @@ export function programar(input: EngineInput): ResultadoProgramacion {
     readyAt: 0,
     tanqueId: null,
     completado: false,
+    esperaDesde: null,
   }));
+
+  /** Tanques con tarea manual pendiente tras espera pasiva (fin de revólver) */
+  const manualDueByTank = new Map<string, number>();
 
   const sobrecargasRegistradas = new Set<string>();
   let iter = 0;
@@ -305,7 +352,10 @@ export function programar(input: EngineInput): ResultadoProgramacion {
 
     if (op.tipo === 'pasivo') {
       if (!lote.tanqueId) return null;
-      const inicio = Math.max(lote.readyAt, tankFreeAt[lote.tanqueId]);
+      const inicio =
+        lote.esperaDesde != null
+          ? lote.esperaDesde
+          : Math.max(lote.readyAt, tankFreeAt[lote.tanqueId]);
       const fin = inicio + op.duracionMin;
       return {
         lote,
@@ -364,6 +414,18 @@ export function programar(input: EngineInput): ResultadoProgramacion {
         const inicio = Math.max(pick.inicio, tankFreeAt[tanque]);
         const fin = inicio + pick.dur;
         if (montajesSolapados(tareas, inicio, fin) >= capMontaje) return null;
+        if (
+          !montajeRespetaDeadlines(
+            inicio,
+            fin,
+            [pick.operarios[0].id, pick.operarios[1].id],
+            manualDueByTank,
+            operariosSel,
+            opFreeAt,
+          )
+        ) {
+          return null;
+        }
         return {
           lote,
           op,
@@ -491,7 +553,26 @@ export function programar(input: EngineInput): ResultadoProgramacion {
     }
 
     if (lote.tanqueId && lote.tanqueId !== '—') {
-      tankFreeAt[lote.tanqueId] = cand.fin;
+      const nextOp = opsOrdenadas[lote.opIndex + 1];
+      if (
+        (op.id === 'celulosa1' || op.id === 'celulosa2') &&
+        nextOp?.tipo === 'pasivo'
+      ) {
+        tankFreeAt[lote.tanqueId] = cand.inicio + nextOp.duracionMin;
+      } else {
+        tankFreeAt[lote.tanqueId] = cand.fin;
+      }
+    }
+
+    if (op.id === 'celulosa1' || op.id === 'celulosa2') {
+      lote.esperaDesde = cand.inicio;
+    }
+    if (op.tipo === 'pasivo' && lote.tanqueId) {
+      manualDueByTank.set(lote.tanqueId, cand.fin);
+      lote.esperaDesde = null;
+    }
+    if ((op.id === 'celulosa2' || op.id === 'resina') && lote.tanqueId) {
+      manualDueByTank.delete(lote.tanqueId);
     }
 
     tareas.push({

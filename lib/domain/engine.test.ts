@@ -95,6 +95,51 @@ describe('programar — invariantes', () => {
   });
 });
 
+describe('programar — timing celulosa (revólver 30 min)', () => {
+  function tareasLote0(res: ReturnType<typeof programar>) {
+    return res.tareas.filter((t) => t.loteIndex === 0);
+  }
+
+  it('30 min exactos entre inicios de celulosa1 y celulosa2', () => {
+    const res = programar(baseInput(OPERARIOS_INICIALES.slice(0, 2), 5));
+    const c1 = tareasLote0(res).find((t) => t.operacionId === 'celulosa1');
+    const c2 = tareasLote0(res).find((t) => t.operacionId === 'celulosa2');
+    expect(c1).toBeTruthy();
+    expect(c2).toBeTruthy();
+    expect(c2!.inicioMin - c1!.inicioMin).toBe(30);
+  });
+
+  it('30 min exactos entre inicios de celulosa2 y resina', () => {
+    const res = programar(baseInput(OPERARIOS_INICIALES.slice(0, 2), 5));
+    const c2 = tareasLote0(res).find((t) => t.operacionId === 'celulosa2');
+    const resina = tareasLote0(res).find((t) => t.operacionId === 'resina');
+    expect(c2).toBeTruthy();
+    expect(resina).toBeTruthy();
+    expect(resina!.inicioMin - c2!.inicioMin).toBe(30);
+  });
+
+  it('espera1 anclada al inicio de celulosa1 (revólver desde la adición)', () => {
+    const res = programar(baseInput(OPERARIOS_INICIALES.slice(0, 2), 5));
+    const c1 = tareasLote0(res).find((t) => t.operacionId === 'celulosa1');
+    const e1 = tareasLote0(res).find((t) => t.operacionId === 'espera1');
+    expect(c1).toBeTruthy();
+    expect(e1).toBeTruthy();
+    expect(e1!.inicioMin).toBe(c1!.inicioMin);
+    expect(e1!.finMin - e1!.inicioMin).toBe(30);
+    expect(e1!.operarioId).toBeNull();
+  });
+
+  it('con 2 operarios, celulosa2 no se retrasa tras espera1', () => {
+    const res = programar(baseInput(OPERARIOS_INICIALES.slice(0, 2), 5));
+    const c2 = tareasLote0(res).find((t) => t.operacionId === 'celulosa2');
+    const e1 = tareasLote0(res).find((t) => t.operacionId === 'espera1');
+    expect(c2).toBeTruthy();
+    expect(e1).toBeTruthy();
+    expect(c2!.inicioMin).toBeLessThanOrEqual(e1!.finMin);
+    assertNoOperatorOverlap(res.tareas);
+  });
+});
+
 describe('programar — montaje en equipo', () => {
   it('montaje asigna 2 operarios al mismo par', () => {
     const res = programar(baseInput(OPERARIOS_INICIALES.slice(0, 2), 2));
