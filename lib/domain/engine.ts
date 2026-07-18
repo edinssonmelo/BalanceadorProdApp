@@ -102,6 +102,27 @@ function montajeRespetaDeadlines(
   return true;
 }
 
+/** Mayor = más urgente cuando varios candidatos comparten el mismo inicio. */
+function prioridadCandidato(cand: ScheduleCandidate): number {
+  const { op, lote } = cand;
+  switch (op.id) {
+    case 'resina':
+      return 1000;
+    case 'finalizacion':
+      return 900;
+    case 'celulosa2':
+      return 700 + Math.min(lote.readyAt, 120);
+    case 'celulosa1':
+      return 400;
+    case 'montaje':
+      return 200;
+    case 'pesaje':
+      return 100;
+    default:
+      return 50;
+  }
+}
+
 function duracionAjustada(base: number, eficiencia: number): number {
   if (!eficiencia || eficiencia <= 0) return base;
   return Math.max(1, Math.round((base * 100) / eficiencia));
@@ -454,20 +475,34 @@ export function programar(input: EngineInput): ResultadoProgramacion {
     }
 
     if (!lote.tanqueId) return null;
-    const operariosParaOperacion =
-      op.id === 'celulosa2' && lote.celulosaOperarioId
-        ? operariosSel.filter((o) => o.id === lote.celulosaOperarioId)
-        : operariosSel;
-    const pick = elegirOperario(
-      Math.max(lote.readyAt, tankFreeAt[lote.tanqueId]),
+    const desde = Math.max(lote.readyAt, tankFreeAt[lote.tanqueId]);
+    let pick = elegirOperario(
+      desde,
       op.duracionMin,
-      operariosParaOperacion,
+      operariosSel,
       opFreeAt,
       opMinutes,
       horizonMin,
       horaInicioAbs,
       pausas,
     );
+    // Preferir mismo operario en celulosa2 si está casi tan libre como cualquier otro.
+    if (pick && op.id === 'celulosa2' && lote.celulosaOperarioId) {
+      const preferido = operariosSel.filter((o) => o.id === lote.celulosaOperarioId);
+      const pickPreferido = elegirOperario(
+        desde,
+        op.duracionMin,
+        preferido,
+        opFreeAt,
+        opMinutes,
+        horizonMin,
+        horaInicioAbs,
+        pausas,
+      );
+      if (pickPreferido && pickPreferido.inicio <= pick.inicio + 5) {
+        pick = pickPreferido;
+      }
+    }
     if (!pick) return null;
     const inicio = Math.max(pick.inicio, lote.readyAt, tankFreeAt[lote.tanqueId]);
     const fin = inicio + pick.dur;
@@ -520,11 +555,12 @@ export function programar(input: EngineInput): ResultadoProgramacion {
       continue;
     }
 
-    // Primero el que puede empezar antes; a igualdad, avanzar lotes ya en curso
-    // (mayor opIndex) antes de abrir lotes nuevos — libera tanques y operarios antes.
+    // Primero el que puede empezar antes; a igualdad, priorizar resina/celulosa2
+    // (tanque ya en revólver o con primera celulosa pendiente de cerrar).
     candidatos.sort(
       (a, b) =>
         a.inicio - b.inicio ||
+        prioridadCandidato(b) - prioridadCandidato(a) ||
         b.lote.opIndex - a.lote.opIndex ||
         a.lote.loteIndex - b.lote.loteIndex,
     );

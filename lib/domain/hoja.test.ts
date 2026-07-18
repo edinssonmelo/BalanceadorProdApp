@@ -39,6 +39,9 @@ describe('hoja excel', () => {
     expect(filas[0].celdas.T1?.texto).toBe('HORARIO DE ENTRADA');
     expect(filas.find((f) => f.horaOffsetMin === 5)?.celdas.T1?.texto).toBe('INICIO PESAJE TANQUE 1');
     expect(filas.find((f) => f.horaOffsetMin === 10)?.celdas.T1?.texto).toContain('MONTAJE TANQUE 1');
+    expect(filas.find((f) => f.horaOffsetMin === 35)?.celdas.T1?.texto).toBe(
+      'AGREGAR PRIMERA CELULOSA AL TANQUE 1',
+    );
     expect(filas.length).toBeGreaterThan(5);
   });
 });

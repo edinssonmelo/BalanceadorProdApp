@@ -68,6 +68,8 @@ Cada tanque que se programa sigue esta secuencia:
 
 El **revólver de 30 minutos** empieza al terminar de agregar la segunda celulosa; es obligatorio y no se puede acortar desde configuración.
 
+En la **hoja de producción**, las horas de celulosa, resina y fin de proceso muestran el momento en que **termina** la tarea (convención del supervisor). Pesaje y montaje muestran el **inicio**.
+
 ### Productos / colores
 Al crear el plan defines qué se va a fabricar. Cada producto puede llevar una **instrucción visible** para el operario (ej.: "Agregar 2.5 kg azul").  
 Eso **no es la fórmula completa** — es solo lo que el operario necesita ver en piso.

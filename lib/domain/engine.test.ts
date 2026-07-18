@@ -100,14 +100,22 @@ describe('programar — timing celulosa (revólver 30 min)', () => {
     return res.tareas.filter((t) => t.loteIndex === 0);
   }
 
-  it('un operario agrega celulosa2 inmediatamente después de celulosa1', () => {
+  it('un operario agrega celulosa2 inmediatamente después de celulosa1 si está libre', () => {
     const res = programar(baseInput(OPERARIOS_INICIALES.slice(0, 2), 5));
     const c1 = tareasLote0(res).find((t) => t.operacionId === 'celulosa1');
     const c2 = tareasLote0(res).find((t) => t.operacionId === 'celulosa2');
     expect(c1).toBeTruthy();
     expect(c2).toBeTruthy();
     expect(c2!.inicioMin).toBe(c1!.finMin);
-    expect(c2!.operarioId).toBe(c1!.operarioId);
+  });
+
+  it('si el operario de celulosa1 está ocupado, otro puede hacer celulosa2', () => {
+    const res = programar(baseInput(OPERARIOS_INICIALES.slice(0, 2), 5));
+    const c1 = res.tareas.find((t) => t.loteIndex === 1 && t.operacionId === 'celulosa1');
+    const c2 = res.tareas.find((t) => t.loteIndex === 1 && t.operacionId === 'celulosa2');
+    expect(c1).toBeTruthy();
+    expect(c2).toBeTruthy();
+    expect(c2!.inicioMin).toBeGreaterThanOrEqual(c1!.finMin);
   });
 
   it('el revólver comienza al terminar celulosa2 y dura 30 min', () => {
@@ -126,6 +134,23 @@ describe('programar — timing celulosa (revólver 30 min)', () => {
   it('no programa una espera entre las dos adiciones de celulosa', () => {
     const res = programar(baseInput(OPERARIOS_INICIALES.slice(0, 2), 5));
     expect(tareasLote0(res).find((t) => t.operacionId === 'espera1')).toBeUndefined();
+  });
+
+  it('prioriza resina y celulosa2 sobre nueva celulosa1 a igual inicio', () => {
+    const res = programar(baseInput(OPERARIOS_INICIALES.slice(0, 2), 5));
+    const manuales = res.tareas.filter(
+      (t) =>
+        t.operarioId &&
+        ['celulosa1', 'celulosa2', 'resina'].includes(t.operacionId),
+    );
+    for (const c2 of manuales.filter((t) => t.operacionId === 'celulosa2')) {
+      const c1 = manuales.find(
+        (t) => t.loteIndex === c2.loteIndex && t.operacionId === 'celulosa1',
+      );
+      expect(c1).toBeTruthy();
+      expect(c2.inicioMin).toBeGreaterThanOrEqual(c1!.finMin);
+    }
+    assertNoOperatorOverlap(res.tareas);
   });
 
   it('con 2 operarios, resina no se retrasa tras el revólver', () => {

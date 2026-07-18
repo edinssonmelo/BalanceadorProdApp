@@ -109,6 +109,12 @@ function bucketMin(min: number): number {
   return Math.floor(min / PASO_MIN) * PASO_MIN;
 }
 
+/** Convención planta: pesaje/montaje al inicio; celulosa/resina/fin al terminar la tarea. */
+function minutoHitoEnHoja(t: TareaProgramada): number {
+  if (t.operacionId === 'pesaje' || t.operacionId === 'montaje') return t.inicioMin;
+  return t.finMin;
+}
+
 /** Grilla tipo Excel: columna HORA + una columna por tanque, filas cada 5 min. */
 export function grillaDistribucionExcel(
   tareas: TareaProgramada[],
@@ -132,7 +138,7 @@ export function grillaDistribucionExcel(
     const tanqueId =
       t.tanqueId !== '—' ? t.tanqueId : loteTanque.get(t.loteIndex);
     if (!tanqueId) continue;
-    const b = bucketMin(t.inicioMin);
+    const b = bucketMin(minutoHitoEnHoja(t));
     const key = `${tanqueId}@${b}`;
     if (t.operacionId === 'montaje') {
       const tienePesaje = (tareasPorLote.get(t.loteIndex) ?? []).some((x) => x.operacionId === 'pesaje');
@@ -249,10 +255,13 @@ export function resumenPorTanque(
       .sort((a, b) => a.inicioMin - b.inicioMin);
     if (!lote.length) return;
 
-    const pick = (opId: string) =>
-      lote.find((t) => t.operacionId === opId)
-        ? offsetToClock(baseInicioMin, lote.find((t) => t.operacionId === opId)!.inicioMin)
-        : undefined;
+    const pick = (opId: string) => {
+      const t = lote.find((x) => x.operacionId === opId);
+      if (!t) return undefined;
+      const min =
+        opId === 'pesaje' || opId === 'montaje' ? t.inicioMin : t.finMin;
+      return offsetToClock(baseInicioMin, min);
+    };
 
     filas.push({
       tanqueId,
