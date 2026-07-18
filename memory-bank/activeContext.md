@@ -1,7 +1,7 @@
 # Contexto activo
 
 ## Última sesión (2026-07-18)
-Corrección de proceso: un operario agrega celulosa 1 y celulosa 2 consecutivamente (5 min cada una); el revólver de 30 min empieza después de la segunda y precede a resina.
+Convención planta validada: hoja muestra **fin** de celulosa/resina (supervisor confirmó). Prioridad motor: resina > celulosa2 > celulosa1; celulosa2 puede otro operario si el primero está ocupado.
 
 ## Flujo principal (MVP)
 1. Crear y revisar plan del día (comparación 2 vs 3 ops).
